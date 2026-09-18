@@ -59,3 +59,10 @@ model Ticket {
   instantPrize  String?
   createdAt     DateTime @default(now())
 }
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}

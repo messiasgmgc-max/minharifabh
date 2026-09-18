@@ -1,8 +1,8 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { calculateRaffleFinances } from '@/lib/finance';
 import { createPixPayment } from '@/lib/mercadopago';
+import { saveSetting } from '@/lib/settings';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -56,7 +56,7 @@ export async function createCheckoutOrderAction(formData: FormData) {
   if (!raffle) throw new Error('Rifa não encontrada');
 
   const totalAmount = Number((quantity * raffle.quotaPrice).toFixed(2));
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos para pagar
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
   const order = await prisma.order.create({
     data: {
@@ -70,7 +70,6 @@ export async function createCheckoutOrderAction(formData: FormData) {
     }
   });
 
-  // Gera o pagamento PIX no Mercado Pago
   const pixData = await createPixPayment({
     orderId: order.id,
     title: raffle.title,
@@ -89,4 +88,26 @@ export async function createCheckoutOrderAction(formData: FormData) {
   });
 
   redirect(`/pedido/${order.id}`);
+}
+
+export async function saveSettingsAction(formData: FormData) {
+  const keys = [
+    'MERCADOPAGO_ACCESS_TOKEN',
+    'MERCADOPAGO_PUBLIC_KEY',
+    'MERCADOPAGO_WEBHOOK_SECRET',
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'ADMIN_PASSWORD'
+  ];
+
+  for (const key of keys) {
+    const val = formData.get(key) as string;
+    if (val !== null && val !== undefined) {
+      await saveSetting(key, val);
+    }
+  }
+
+  revalidatePath('/admin/configuracoes');
+  redirect('/admin/configuracoes?saved=true');
 }
