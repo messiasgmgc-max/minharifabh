@@ -52,6 +52,20 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
 
   const isPaid = order.status === 'PAID';
 
+  let selectedNumbersList: number[] = [];
+  if (order.selectedNumbers) {
+    try {
+      const parsed = typeof order.selectedNumbers === 'string'
+        ? JSON.parse(order.selectedNumbers)
+        : order.selectedNumbers;
+      if (Array.isArray(parsed)) {
+        selectedNumbersList = parsed;
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
   return (
     <div className="max-w-lg mx-auto space-y-6 py-6">
       {isPaid ? (
@@ -62,7 +76,7 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
           </div>
           <div className="space-y-2">
             <h1 className="text-2xl font-black text-white">Pagamento Confirmado!</h1>
-            <p className="text-xs text-slate-400">Seus números foram alocados com sucesso no sistema.</p>
+            <p className="text-xs text-slate-400">Seus números foram confirmados e alocados na Rifa Milionária.</p>
           </div>
 
           {/* Números Alocados */}
@@ -77,7 +91,7 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
                   className={`px-3 py-1.5 rounded-lg text-sm font-black border ${
                     t.isInstantWin
                       ? 'bg-amber-400 text-slate-950 border-amber-300 animate-pulse'
-                      : 'bg-slate-900 text-slate-200 border-slate-700'
+                      : 'bg-slate-900 text-slate-200 border-slate-700 font-mono'
                   }`}
                 >
                   #{String(t.number).padStart(4, '0')}
@@ -94,7 +108,7 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
           </div>
 
           <Link href="/" className="block w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl text-sm transition-all">
-            Voltar para as Rifas
+            Voltar para os Sorteios
           </Link>
         </div>
       ) : (
@@ -107,6 +121,22 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
             <h1 className="text-xl font-bold text-white mt-2">{order.raffle?.title}</h1>
             <p className="text-xs text-slate-400">{order.quantity} cotas • Total: {formatCurrency(order.totalAmount)}</p>
           </div>
+
+          {/* Se escolheu números manuais, mostra quais foram reservados */}
+          {selectedNumbersList.length > 0 && (
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-left">
+              <span className="text-[11px] font-bold text-emerald-400 block uppercase">
+                Cotas Selecionadas ({selectedNumbersList.length}):
+              </span>
+              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                {selectedNumbersList.map((num) => (
+                  <span key={num} className="bg-slate-900 text-slate-300 font-mono text-xs px-2 py-0.5 rounded border border-slate-800">
+                    #{String(num).padStart(4, '0')}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* QR Code PIX */}
           <div className="bg-white p-4 rounded-xl inline-block shadow-lg mx-auto">

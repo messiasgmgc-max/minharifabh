@@ -2,8 +2,8 @@ import './globals.css';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'minharifabh | Sua Rifa de Prêmios Incríveis em BH',
-  description: 'Compre cotas online na minharifabh com PIX automático Mercado Pago e premiação instantânea!',
+  title: 'Rifa Milionária | Sorteios Exclusivos e Prêmios Milionários',
+  description: 'Compre cotas online na Rifa Milionária (rifamilionaria.com) com PIX automático Mercado Pago e premiação instantânea!',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -13,16 +13,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Header Rebranded */}
         <header className="border-b border-emerald-500/20 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
           <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-2xl font-black tracking-tight text-white group">
-              <span className="bg-gradient-to-tr from-emerald-500 to-teal-300 text-slate-950 px-2.5 py-1 rounded-2xl font-black text-base shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-                BH
+            <Link href="/" className="flex items-center gap-2.5 text-2xl font-black tracking-tight text-white group">
+              <span className="bg-gradient-to-tr from-emerald-400 via-teal-300 to-amber-300 text-slate-950 px-2.5 py-1 rounded-2xl font-black text-sm shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                RM
               </span>
-              <span className="text-white">minha<span className="text-emerald-400">rifa</span><span className="text-amber-400">bh</span></span>
+              <span className="text-white tracking-tight">
+                Rifa <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Milionária</span>
+              </span>
             </Link>
 
             <nav className="flex items-center gap-4 text-xs md:text-sm font-bold">
               <Link href="/" className="text-slate-300 hover:text-emerald-400 transition-colors flex items-center gap-1.5">
-                🔥 Rifas Ativas
+                🔥 Sorteios Ativos
               </Link>
               <Link href="/meus-numeros" className="text-slate-300 hover:text-emerald-400 transition-colors flex items-center gap-1.5">
                 🔍 Meus Números
@@ -38,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         {/* Footer */}
         <footer className="border-t border-slate-900 bg-slate-950 py-10 text-center text-xs text-slate-500 space-y-2">
-          <p className="font-extrabold text-slate-400">minharifabh • Todos os direitos reservados</p>
+          <p className="font-extrabold text-slate-400">Rifa Milionária (rifamilionaria.com) • Todos os direitos reservados</p>
           <p className="text-[11px] text-slate-600">Pagamentos 100% Seguros via Mercado Pago PIX • Entrega Garantida</p>
         </footer>
       </body>

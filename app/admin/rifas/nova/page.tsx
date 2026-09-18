@@ -5,10 +5,13 @@ import { createRaffleAction } from '@/app/actions';
 import { calculateRaffleFinances, formatCurrency } from '@/lib/finance';
 import Link from 'next/link';
 
+const QUOTA_PRESETS = [100, 500, 1000, 5000, 10000, 50000, 100000, 1000000];
+
 export default function NewRafflePage() {
   const [costPrice, setCostPrice] = useState(1500);
   const [totalQuotas, setTotalQuotas] = useState(1000);
   const [quotaPrice, setQuotaPrice] = useState(3.50);
+  const [selectionMode, setSelectionMode] = useState<'BOTH' | 'MANUAL' | 'AUTOMATIC'>('BOTH');
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -57,7 +60,7 @@ export default function NewRafflePage() {
             🎁 Criar Nova Rifa
           </h1>
           <p className="text-xs text-slate-400">
-            Cadastre o produto, insira imagens no Supabase Storage e calcule o lucro real.
+            Cadastre o prêmio, configure a quantidade de cotas, modo de escolha e calcule seu lucro real.
           </p>
         </div>
         <Link
@@ -69,7 +72,8 @@ export default function NewRafflePage() {
       </div>
 
       <form action={createRaffleAction} className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl backdrop-blur-xl">
-        <div className="space-y-4">
+        <div className="space-y-5">
+          {/* Título */}
           <div>
             <label className="text-xs text-slate-400 font-bold block mb-1">Título do Produto / Prêmio</label>
             <input
@@ -123,7 +127,6 @@ export default function NewRafflePage() {
               )}
             </div>
 
-            {/* Input oculto/editável com a URL da imagem */}
             <input
               type="text"
               name="imageUrl"
@@ -134,6 +137,7 @@ export default function NewRafflePage() {
             />
           </div>
 
+          {/* Descrição */}
           <div>
             <label className="text-xs text-slate-400 font-bold block mb-1">Descrição Detalhada</label>
             <textarea
@@ -145,27 +149,128 @@ export default function NewRafflePage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Quantidade Total de Cotas (Com Botões Rápidos) */}
+          <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-2xl space-y-3">
+            <div className="flex justify-between items-center">
+              <label className="text-xs text-emerald-400 font-black uppercase tracking-wider block">
+                🎯 Quantidade Total de Cotas / Rifas
+              </label>
+              <span className="text-xs text-slate-400 font-mono font-bold">
+                {totalQuotas.toLocaleString('pt-BR')} números (0001 até {String(totalQuotas).padStart(4, '0')})
+              </span>
+            </div>
+
+            {/* Presets Rápidos */}
+            <div className="flex flex-wrap gap-2">
+              {QUOTA_PRESETS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setTotalQuotas(preset)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                    totalQuotas === preset
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/20'
+                      : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  {preset >= 1000000
+                    ? `${preset / 1000000}M`
+                    : preset >= 1000
+                    ? `${preset / 1000}k`
+                    : preset} cotas
+                </button>
+              ))}
+            </div>
+
+            <div className="relative">
+              <input
+                type="number"
+                name="totalQuotas"
+                value={totalQuotas}
+                onChange={(e) => setTotalQuotas(Math.max(1, parseInt(e.target.value) || 0))}
+                min={1}
+                required
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white font-mono font-bold focus:outline-none focus:border-emerald-400"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-semibold">
+                Cotas Totais
+              </span>
+            </div>
+          </div>
+
+          {/* Modo de Escolha de Números */}
+          <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-2xl space-y-3">
+            <label className="text-xs text-amber-400 font-black uppercase tracking-wider block">
+              🎲 Modo de Escolha dos Números pelo Cliente
+            </label>
+
+            <input type="hidden" name="selectionMode" value={selectionMode} />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setSelectionMode('BOTH')}
+                className={`p-3.5 rounded-2xl text-left border transition-all flex flex-col justify-between space-y-1 ${
+                  selectionMode === 'BOTH'
+                    ? 'bg-emerald-500/10 border-emerald-400 text-white shadow-lg shadow-emerald-500/10'
+                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-black text-xs text-emerald-400">
+                  <span>🔀</span> Ambos (Híbrido)
+                </div>
+                <p className="text-[11px] text-slate-400 leading-tight">
+                  O cliente pode escolher números específicos na grade OU gerar aleatoriamente.
+                </p>
+                <span className="text-[10px] text-emerald-300 font-bold mt-1">★ Recomendado</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectionMode('AUTOMATIC')}
+                className={`p-3.5 rounded-2xl text-left border transition-all flex flex-col justify-between space-y-1 ${
+                  selectionMode === 'AUTOMATIC'
+                    ? 'bg-emerald-500/10 border-emerald-400 text-white shadow-lg shadow-emerald-500/10'
+                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-black text-xs text-teal-400">
+                  <span>🎲</span> Apenas Aleatório
+                </div>
+                <p className="text-[11px] text-slate-400 leading-tight">
+                  Sistema sorteia as cotas automaticamente ao pagar. Mais rápido para rifas grandes.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectionMode('MANUAL')}
+                className={`p-3.5 rounded-2xl text-left border transition-all flex flex-col justify-between space-y-1 ${
+                  selectionMode === 'MANUAL'
+                    ? 'bg-emerald-500/10 border-emerald-400 text-white shadow-lg shadow-emerald-500/10'
+                    : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-black text-xs text-amber-400">
+                  <span>🔢</span> Apenas Escolha Manual
+                </div>
+                <p className="text-[11px] text-slate-400 leading-tight">
+                  O cliente é obrigado a selecionar os números que deseja na grade interativa.
+                </p>
+              </button>
+            </div>
+          </div>
+
+          {/* Valores Financeiros */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-400 font-bold block mb-1">Valor de Custo (R$)</label>
+              <label className="text-xs text-slate-400 font-bold block mb-1">Valor de Custo do Prêmio (R$)</label>
               <input
                 type="number"
                 step="0.01"
                 name="costPrice"
                 value={costPrice}
                 onChange={(e) => setCostPrice(parseFloat(e.target.value) || 0)}
-                required
-                className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-slate-400 font-bold block mb-1">Total de Cotas</label>
-              <input
-                type="number"
-                name="totalQuotas"
-                value={totalQuotas}
-                onChange={(e) => setTotalQuotas(parseInt(e.target.value) || 0)}
                 required
                 className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
               />
@@ -226,7 +331,7 @@ export default function NewRafflePage() {
           disabled={uploading}
           className="w-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black py-4 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20 active:scale-95 disabled:opacity-50"
         >
-          🚀 Criar e Lançar Rifa na minharifabh
+          🚀 Criar e Lançar Rifa na Rifa Milionária
         </button>
       </form>
     </div>

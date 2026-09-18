@@ -25,6 +25,7 @@ export default async function RaffleDetailPage({ params }: { params: { slug: str
   const progressPercent = Math.min(Math.round((soldCount / raffle.totalQuotas) * 100), 100);
 
   const instantWinners = (raffle.tickets || []).filter((t: any) => t.isInstantWin && t.order);
+  const takenNumbers = (raffle.tickets || []).map((t: any) => t.number);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -36,7 +37,7 @@ export default async function RaffleDetailPage({ params }: { params: { slug: str
           <div className="absolute bottom-6 left-6 right-6 flex flex-col md:flex-row justify-between md:items-end gap-4">
             <div>
               <span className="bg-emerald-500 text-slate-950 font-black text-xs px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
-                🔥 Sorteio Ativo minharifabh
+                🔥 Sorteio Ativo Rifa Milionária
               </span>
               <h1 className="text-2xl md:text-4xl font-black text-white mt-2">{raffle.title}</h1>
             </div>
@@ -108,6 +109,9 @@ export default async function RaffleDetailPage({ params }: { params: { slug: str
             raffleId={raffle.id}
             quotaPrice={raffle.quotaPrice}
             availableQuotas={availableQuotas}
+            totalQuotas={raffle.totalQuotas}
+            selectionMode={raffle.selectionMode || 'BOTH'}
+            takenNumbers={takenNumbers}
           />
         </div>
       </div>

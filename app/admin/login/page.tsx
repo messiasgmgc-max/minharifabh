@@ -19,7 +19,7 @@ export default function AdminLoginPage({
           </div>
           <h1 className="text-2xl font-black text-white">Painel Administrativo</h1>
           <p className="text-xs text-slate-400">
-            Digite a senha de administrador da <span className="text-emerald-400 font-bold">minharifabh</span> para acessar.
+            Digite a senha de administrador da <span className="text-emerald-400 font-bold">Rifa Milionária</span> para acessar.
           </p>
         </div>
 
@@ -54,7 +54,7 @@ export default function AdminLoginPage({
 
         <div className="text-center pt-2">
           <span className="text-[11px] text-slate-600">
-            Acesso Restrito • minharifabh Security System
+            Acesso Restrito • Rifa Milionária Security System
           </span>
         </div>
       </div>

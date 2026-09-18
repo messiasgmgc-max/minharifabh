@@ -43,9 +43,9 @@ export default async function AdminDashboardPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-6">
         <div>
           <h1 className="text-2xl font-black text-white flex items-center gap-2">
-            ⚙️ Painel Administrativo <span className="text-emerald-400 font-bold text-sm bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">minharifabh</span>
+            ⚙️ Painel Administrativo <span className="text-emerald-400 font-bold text-sm bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">Rifa Milionária</span>
           </h1>
-          <p className="text-xs text-slate-400">Visão financeira em tempo real e gestão de campanhas</p>
+          <p className="text-xs text-slate-400">Visão financeira em tempo real e gestão de campanhas (rifamilionaria.com)</p>
         </div>
 
         <div className="flex items-center gap-2">

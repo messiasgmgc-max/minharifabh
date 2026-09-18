@@ -35,11 +35,12 @@ export async function createRaffleAction(formData: FormData) {
     const title = (formData.get('title') as string || '').trim();
     if (!title) throw new Error('O título da rifa é obrigatório.');
 
-    const description = (formData.get('description') as string || '').trim() || 'Rifa exclusiva minharifabh';
+    const description = (formData.get('description') as string || '').trim() || 'Rifa exclusiva Rifa Milionária';
     const imageUrl = (formData.get('imageUrl') as string || '').trim() || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800';
     const costPrice = parseFloat(formData.get('costPrice') as string) || 0;
     const totalQuotas = Math.max(1, parseInt(formData.get('totalQuotas') as string) || 1000);
     const quotaPrice = Math.max(0.01, parseFloat(formData.get('quotaPrice') as string) || 1.0);
+    const selectionMode = (formData.get('selectionMode') as string) || 'BOTH'; // 'AUTOMATIC' | 'MANUAL' | 'BOTH'
     const drawDateStr = formData.get('drawDate') as string;
     
     let drawDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
@@ -69,6 +70,7 @@ export async function createRaffleAction(formData: FormData) {
         costPrice,
         totalQuotas,
         quotaPrice,
+        selectionMode,
         mpFeePercent: 0.99,
         drawDate,
         status: 'ACTIVE',
@@ -99,10 +101,10 @@ export async function createRaffleAction(formData: FormData) {
 export async function createCheckoutOrderAction(formData: FormData) {
   try {
     const raffleId = formData.get('raffleId') as string;
-    const quantity = parseInt(formData.get('quantity') as string) || 1;
-    const buyerName = formData.get('buyerName') as string;
-    const buyerPhone = formData.get('buyerPhone') as string;
-    const buyerEmail = formData.get('buyerEmail') as string;
+    const buyerName = (formData.get('buyerName') as string || '').trim();
+    const buyerPhone = (formData.get('buyerPhone') as string || '').trim();
+    const buyerEmail = (formData.get('buyerEmail') as string || '').trim();
+    const selectedNumbersRaw = (formData.get('selectedNumbers') as string || '').trim();
 
     const { data: raffle } = await supabase
       .from('Raffle')
@@ -111,6 +113,40 @@ export async function createCheckoutOrderAction(formData: FormData) {
       .single();
 
     if (!raffle) throw new Error('Rifa não encontrada.');
+
+    let parsedNumbers: number[] = [];
+    if (selectedNumbersRaw) {
+      try {
+        const p = JSON.parse(selectedNumbersRaw);
+        if (Array.isArray(p)) {
+          parsedNumbers = p.map(Number).filter(n => !isNaN(n) && n >= 1 && n <= raffle.totalQuotas);
+        }
+      } catch (e) {
+        // Tenta comma-separated
+        parsedNumbers = selectedNumbersRaw.split(',')
+          .map(s => parseInt(s.trim()))
+          .filter(n => !isNaN(n) && n >= 1 && n <= raffle.totalQuotas);
+      }
+    }
+
+    let quantity = parseInt(formData.get('quantity') as string) || 1;
+    if (parsedNumbers.length > 0) {
+      quantity = parsedNumbers.length;
+    }
+
+    // Se escolheu números manuais, valida se algum já está ocupado
+    if (parsedNumbers.length > 0) {
+      const { data: existingTickets } = await supabase
+        .from('Ticket')
+        .select('number')
+        .eq('raffleId', raffle.id)
+        .in('number', parsedNumbers);
+
+      if (existingTickets && existingTickets.length > 0) {
+        const taken = existingTickets.map((t: any) => t.number).join(', ');
+        throw new Error(`As seguintes cotas acabaram de ser compradas: ${taken}. Por favor, escolha outros números.`);
+      }
+    }
 
     const totalAmount = Number((quantity * raffle.quotaPrice).toFixed(2));
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
@@ -124,6 +160,7 @@ export async function createCheckoutOrderAction(formData: FormData) {
         buyerEmail,
         quantity,
         totalAmount,
+        selectedNumbers: parsedNumbers.length > 0 ? JSON.stringify(parsedNumbers) : null,
         expiresAt,
         status: 'PENDING'
       })

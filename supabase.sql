@@ -1,5 +1,6 @@
 -- ==============================================================================
--- SCRIPT DDL COMPLETO PARA CRIAR AS TABELAS NO SUPABASE SQL EDITOR (minharifabh)
+-- SCRIPT DDL COMPLETO PARA CRIAR AS TABELAS NO SUPABASE SQL EDITOR
+-- Sistema: Rifa Milionária (rifamilionaria.com)
 -- Copie todo este conteúdo, cole no SQL Editor do Supabase e clique em "Run".
 -- ==============================================================================
 
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS "Raffle" (
     "mpFeePercent" DOUBLE PRECISION NOT NULL DEFAULT 0.99,
     "drawDate" TIMESTAMP(3) NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "selectionMode" TEXT NOT NULL DEFAULT 'BOTH', -- 'AUTOMATIC' | 'MANUAL' | 'BOTH'
     "hasInstantPrizes" BOOLEAN NOT NULL DEFAULT false,
     "instantPrizesCount" INTEGER NOT NULL DEFAULT 0,
     "instantPrizesDetails" TEXT,
@@ -36,6 +38,7 @@ CREATE TABLE IF NOT EXISTS "Order" (
     "quantity" INTEGER NOT NULL,
     "totalAmount" DOUBLE PRECISION NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "selectedNumbers" TEXT, -- JSON ou lista de números escolhidos manualmente
     "mpPaymentId" TEXT UNIQUE,
     "mpQrCode" TEXT,
     "mpPixCopiaECola" TEXT,
@@ -62,6 +65,10 @@ CREATE TABLE IF NOT EXISTS "Setting" (
     "value" TEXT NOT NULL,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Migrações seguras caso as tabelas já existam
+ALTER TABLE "Raffle" ADD COLUMN IF NOT EXISTS "selectionMode" TEXT NOT NULL DEFAULT 'BOTH';
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "selectedNumbers" TEXT;
 
 -- Criar Índices de Alta Performance
 CREATE INDEX IF NOT EXISTS "idx_raffle_slug" ON "Raffle"("slug");
