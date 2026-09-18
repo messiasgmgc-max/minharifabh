@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 import { formatCurrency, calculateRaffleFinances } from '@/lib/finance';
 import { logoutAdminAction } from '@/app/actions';
 
@@ -8,13 +8,11 @@ export const revalidate = 0;
 export default async function AdminDashboardPage() {
   let raffles: any[] = [];
   try {
-    raffles = await prisma.raffle.findMany({
-      include: {
-        orders: { where: { status: 'PAID' } },
-        tickets: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const { data } = await supabase
+      .from('Raffle')
+      .select('*, tickets:Ticket(id)')
+      .order('createdAt', { ascending: false });
+    raffles = data || [];
   } catch (e) {
     console.warn('Banco ainda inicializando');
   }

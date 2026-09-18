@@ -1,40 +1,40 @@
-import { prisma } from './prisma';
+import { supabase } from './supabase';
 
 /**
  * Aloca aleatoriamente números de cotas disponíveis para um pedido pago,
  * verificando bilhetes premiados instantâneos se ativos.
  */
 export async function allocateTicketsForOrder(orderId: string) {
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: { raffle: true }
-  });
+  const { data: order } = await supabase
+    .from('Order')
+    .select('*, raffle:Raffle(*)')
+    .eq('id', orderId)
+    .single();
 
   if (!order || order.status !== 'PAID') return;
 
-  // Verifica se o pedido já tem bilhetes gerados
-  const existingTicketsCount = await prisma.ticket.count({
-    where: { orderId: order.id }
-  });
+  const { count: existingTicketsCount } = await supabase
+    .from('Ticket')
+    .select('*', { count: 'exact', head: true })
+    .eq('orderId', order.id);
 
-  if (existingTicketsCount >= order.quantity) return;
+  if (existingTicketsCount && existingTicketsCount >= order.quantity) return;
 
-  // Busca todos os números já ocupados nesta rifa
-  const takenTickets = await prisma.ticket.findMany({
-    where: { raffleId: order.raffleId },
-    select: { number: true }
-  });
+  const { data: takenTickets } = await supabase
+    .from('Ticket')
+    .select('number')
+    .eq('raffleId', order.raffleId);
 
-  const takenNumbersSet = new Set(takenTickets.map(t => t.number));
+  const takenNumbersSet = new Set((takenTickets || []).map(t => t.number));
   const availableNumbers: number[] = [];
 
-  for (let n = 1; n <= order.raffle.totalQuotas; n++) {
+  const totalQuotas = order.raffle?.totalQuotas || 1000;
+  for (let n = 1; n <= totalQuotas; n++) {
     if (!takenNumbersSet.has(n)) {
       availableNumbers.push(n);
     }
   }
 
-  // Embaralha números disponíveis de forma segura
   for (let i = availableNumbers.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [availableNumbers[i], availableNumbers[j]] = [availableNumbers[j], availableNumbers[i]];
@@ -42,11 +42,12 @@ export async function allocateTicketsForOrder(orderId: string) {
 
   const selectedNumbers = availableNumbers.slice(0, order.quantity);
 
-  // Processa cotas premiadas se ativas
   let instantPrizesMap: Record<number, string> = {};
-  if (order.raffle.hasInstantPrizes && order.raffle.instantPrizesDetails) {
+  if (order.raffle?.hasInstantPrizes && order.raffle?.instantPrizesDetails) {
     try {
-      const details = JSON.parse(order.raffle.instantPrizesDetails);
+      const details = typeof order.raffle.instantPrizesDetails === 'string'
+        ? JSON.parse(order.raffle.instantPrizesDetails)
+        : order.raffle.instantPrizesDetails;
       if (Array.isArray(details)) {
         details.forEach((p: { number: number; prize: string }) => {
           instantPrizesMap[p.number] = p.prize;
@@ -57,7 +58,6 @@ export async function allocateTicketsForOrder(orderId: string) {
     }
   }
 
-  // Registra os bilhetes do pedido no banco de dados
   const ticketsToCreate = selectedNumbers.map((num) => ({
     raffleId: order.raffleId,
     orderId: order.id,
@@ -66,9 +66,10 @@ export async function allocateTicketsForOrder(orderId: string) {
     instantPrize: instantPrizesMap[num] || null,
   }));
 
-  await prisma.ticket.createMany({
-    data: ticketsToCreate
-  });
-
-  console.log(`[Alocação de Cotas] Pedido ${order.id}: ${selectedNumbers.length} cotas atribuídas com sucesso!`);
+  const { error } = await supabase.from('Ticket').insert(ticketsToCreate);
+  if (error) {
+    console.error('Erro ao inserir tickets via Supabase:', error);
+  } else {
+    console.log(`[Alocação de Cotas] Pedido ${order.id}: ${selectedNumbers.length} cotas atribuídas com sucesso!`);
+  }
 }

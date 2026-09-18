@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 import { allocateTicketsForOrder } from '@/lib/ticket-allocator';
 
-// Endpoint auxiliar para testar a aprovação do PIX no ambiente de teste/demo
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const order = await prisma.order.update({
-      where: { id: params.id },
-      data: { status: 'PAID' }
-    });
+    const { data: order, error } = await supabase
+      .from('Order')
+      .update({ status: 'PAID' })
+      .eq('id', params.id)
+      .select()
+      .single();
+
+    if (error || !order) {
+      return NextResponse.json({ error: 'Erro ao atualizar pedido' }, { status: 404 });
+    }
 
     await allocateTicketsForOrder(order.id);
 

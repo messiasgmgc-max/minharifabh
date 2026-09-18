@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 import { createPixPayment } from '@/lib/mercadopago';
 import { saveSetting, getSetting } from '@/lib/settings';
 import { revalidatePath } from 'next/cache';
@@ -42,11 +42,11 @@ export async function createRaffleAction(formData: FormData) {
     const quotaPrice = Math.max(0.01, parseFloat(formData.get('quotaPrice') as string) || 1.0);
     const drawDateStr = formData.get('drawDate') as string;
     
-    let drawDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    let drawDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
     if (drawDateStr) {
       const parsedDate = new Date(drawDateStr);
       if (!isNaN(parsedDate.getTime())) {
-        drawDate = parsedDate;
+        drawDate = parsedDate.toISOString();
       }
     }
 
@@ -59,8 +59,9 @@ export async function createRaffleAction(formData: FormData) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '') + '-' + Date.now().toString().slice(-4);
 
-    const raffle = await prisma.raffle.create({
-      data: {
+    const { data: raffle, error } = await supabase
+      .from('Raffle')
+      .insert({
         title,
         slug,
         description,
@@ -74,8 +75,14 @@ export async function createRaffleAction(formData: FormData) {
         hasInstantPrizes,
         instantPrizesCount,
         instantPrizesDetails,
-      }
-    });
+      })
+      .select()
+      .single();
+
+    if (error || !raffle) {
+      console.error('Supabase createRaffle error:', error);
+      throw new Error(error?.message || 'Erro ao salvar rifa no Supabase.');
+    }
 
     revalidatePath('/');
     revalidatePath('/admin');
@@ -85,7 +92,7 @@ export async function createRaffleAction(formData: FormData) {
       throw error;
     }
     console.error('Erro ao criar rifa:', error);
-    throw new Error(error?.message || 'Erro ao criar a rifa no banco de dados.');
+    throw new Error(error?.message || 'Erro ao criar a rifa no Supabase.');
   }
 }
 
@@ -97,14 +104,20 @@ export async function createCheckoutOrderAction(formData: FormData) {
     const buyerPhone = formData.get('buyerPhone') as string;
     const buyerEmail = formData.get('buyerEmail') as string;
 
-    const raffle = await prisma.raffle.findUnique({ where: { id: raffleId } });
+    const { data: raffle } = await supabase
+      .from('Raffle')
+      .select('*')
+      .eq('id', raffleId)
+      .single();
+
     if (!raffle) throw new Error('Rifa não encontrada.');
 
     const totalAmount = Number((quantity * raffle.quotaPrice).toFixed(2));
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-    const order = await prisma.order.create({
-      data: {
+    const { data: order, error: orderError } = await supabase
+      .from('Order')
+      .insert({
         raffleId: raffle.id,
         buyerName,
         buyerPhone,
@@ -112,8 +125,14 @@ export async function createCheckoutOrderAction(formData: FormData) {
         quantity,
         totalAmount,
         expiresAt,
-      }
-    });
+        status: 'PENDING'
+      })
+      .select()
+      .single();
+
+    if (orderError || !order) {
+      throw new Error(orderError?.message || 'Erro ao criar pedido.');
+    }
 
     const pixData = await createPixPayment({
       orderId: order.id,
@@ -123,14 +142,14 @@ export async function createCheckoutOrderAction(formData: FormData) {
       buyerEmail,
     });
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        mpPaymentId: pixData.paymentId,
+    await supabase
+      .from('Order')
+      .update({
+        mpPaymentId: String(pixData.paymentId),
         mpQrCode: pixData.qrCode,
         mpPixCopiaECola: pixData.pixCopiaECola,
-      }
-    });
+      })
+      .eq('id', order.id);
 
     redirect(`/pedido/${order.id}`);
   } catch (error: any) {

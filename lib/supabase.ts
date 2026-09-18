@@ -1,13 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
-import { getSetting } from './settings';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ijwqphjbqpmgybmmqxsu.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_IwYGQCvwYMF82EA6Bf5H5g_jhE5Y837';
+
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false,
+  },
+});
 
 export async function getSupabaseClient() {
-  const url = await getSetting('NEXT_PUBLIC_SUPABASE_URL', process.env.NEXT_PUBLIC_SUPABASE_URL || '');
-  const serviceKey = await getSetting('SUPABASE_SERVICE_ROLE_KEY', process.env.SUPABASE_SERVICE_ROLE_KEY || '');
-  
-  return createClient(url, serviceKey, {
-    auth: {
-      persistSession: false,
-    },
-  });
+  return supabase;
 }

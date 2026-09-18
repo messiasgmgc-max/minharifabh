@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/finance';
 
 export const revalidate = 0;
@@ -7,12 +7,11 @@ export const revalidate = 0;
 export default async function HomePage() {
   let raffles: any[] = [];
   try {
-    raffles = await prisma.raffle.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        tickets: true,
-      }
-    });
+    const { data } = await supabase
+      .from('Raffle')
+      .select('*, tickets:Ticket(id)')
+      .order('createdAt', { ascending: false });
+    raffles = data || [];
   } catch (e) {
     console.warn('Banco de dados ainda sem dados ou em migração.');
   }

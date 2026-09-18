@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/finance';
 import { notFound } from 'next/navigation';
 import { RaffleCheckoutForm } from '@/components/RaffleCheckoutForm';
@@ -8,14 +8,12 @@ export const revalidate = 0;
 export default async function RaffleDetailPage({ params }: { params: { slug: string } }) {
   let raffle: any = null;
   try {
-    raffle = await prisma.raffle.findUnique({
-      where: { slug: params.slug },
-      include: {
-        tickets: {
-          include: { order: true }
-        }
-      }
-    });
+    const { data } = await supabase
+      .from('Raffle')
+      .select('*, tickets:Ticket(*, order:Order(*))')
+      .eq('slug', params.slug)
+      .single();
+    raffle = data;
   } catch (e) {
     console.error(e);
   }

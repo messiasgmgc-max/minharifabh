@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase';
 import { mpPayment } from '@/lib/mercadopago';
 import { allocateTicketsForOrder } from '@/lib/ticket-allocator';
 
@@ -14,7 +14,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
-    // Consulta status real na API do Mercado Pago
     let status = 'approved';
     let externalReference = '';
 
@@ -27,23 +26,18 @@ export async function POST(req: Request) {
     }
 
     if (status === 'approved') {
-      // Localiza o pedido por mpPaymentId ou externalReference
-      const order = await prisma.order.findFirst({
-        where: {
-          OR: [
-            { mpPaymentId: String(paymentId) },
-            { id: externalReference }
-          ]
-        }
-      });
+      const { data: order } = await supabase
+        .from('Order')
+        .select('*')
+        .or(`mpPaymentId.eq.${paymentId},id.eq.${externalReference}`)
+        .maybeSingle();
 
       if (order && order.status !== 'PAID') {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { status: 'PAID' }
-        });
+        await supabase
+          .from('Order')
+          .update({ status: 'PAID' })
+          .eq('id', order.id);
 
-        // Aloca os números das cotas e verifica bilhetes premiados
         await allocateTicketsForOrder(order.id);
       }
     }

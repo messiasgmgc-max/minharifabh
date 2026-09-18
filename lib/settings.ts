@@ -1,16 +1,19 @@
-import { prisma } from './prisma';
+import { supabase } from './supabase';
 
 /**
- * Busca uma chave de configuração do Banco de Dados.
+ * Busca uma chave de configuração do Banco de Dados via Supabase SDK.
  * Se não existir no banco, faz fallback para process.env.
  */
 export async function getSetting(key: string, defaultValue: string = ''): Promise<string> {
   try {
-    const setting = await prisma.setting.findUnique({
-      where: { key }
-    });
-    if (setting && setting.value) {
-      return setting.value;
+    const { data } = await supabase
+      .from('Setting')
+      .select('value')
+      .eq('key', key)
+      .maybeSingle();
+
+    if (data && data.value) {
+      return data.value;
     }
   } catch (e) {
     // Silencioso se banco estiver inicializando
@@ -19,12 +22,14 @@ export async function getSetting(key: string, defaultValue: string = ''): Promis
 }
 
 /**
- * Salva ou atualiza uma chave de configuração no Banco de Dados.
+ * Salva ou atualiza uma chave de configuração no Banco de Dados via Supabase.
  */
 export async function saveSetting(key: string, value: string): Promise<void> {
-  await prisma.setting.upsert({
-    where: { key },
-    update: { value },
-    create: { key, value }
-  });
+  try {
+    await supabase
+      .from('Setting')
+      .upsert({ key, value, updatedAt: new Date().toISOString() }, { onConflict: 'key' });
+  } catch (e) {
+    console.error(`Erro ao salvar setting ${key}:`, e);
+  }
 }
