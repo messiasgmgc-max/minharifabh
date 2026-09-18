@@ -31,107 +31,143 @@ export async function logoutAdminAction() {
 }
 
 export async function createRaffleAction(formData: FormData) {
-  const title = formData.get('title') as string;
-  const description = formData.get('description') as string;
-  const imageUrl = formData.get('imageUrl') as string || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800';
-  const costPrice = parseFloat(formData.get('costPrice') as string) || 0;
-  const totalQuotas = parseInt(formData.get('totalQuotas') as string) || 1000;
-  const quotaPrice = parseFloat(formData.get('quotaPrice') as string) || 1.0;
-  const drawDateStr = formData.get('drawDate') as string;
-  const hasInstantPrizes = formData.get('hasInstantPrizes') === 'on';
-  const instantPrizesCount = parseInt(formData.get('instantPrizesCount') as string) || 0;
-  const instantPrizesDetails = formData.get('instantPrizesDetails') as string || '[]';
+  try {
+    const title = (formData.get('title') as string || '').trim();
+    if (!title) throw new Error('O título da rifa é obrigatório.');
 
-  const slug = title.toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '') + '-' + Date.now().toString().slice(-4);
-
-  const raffle = await prisma.raffle.create({
-    data: {
-      title,
-      slug,
-      description,
-      imageUrl,
-      costPrice,
-      totalQuotas,
-      quotaPrice,
-      mpFeePercent: 0.99,
-      drawDate: new Date(drawDateStr || Date.now() + 7 * 24 * 60 * 60 * 1000),
-      hasInstantPrizes,
-      instantPrizesCount,
-      instantPrizesDetails,
+    const description = (formData.get('description') as string || '').trim() || 'Rifa exclusiva minharifabh';
+    const imageUrl = (formData.get('imageUrl') as string || '').trim() || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800';
+    const costPrice = parseFloat(formData.get('costPrice') as string) || 0;
+    const totalQuotas = Math.max(1, parseInt(formData.get('totalQuotas') as string) || 1000);
+    const quotaPrice = Math.max(0.01, parseFloat(formData.get('quotaPrice') as string) || 1.0);
+    const drawDateStr = formData.get('drawDate') as string;
+    
+    let drawDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    if (drawDateStr) {
+      const parsedDate = new Date(drawDateStr);
+      if (!isNaN(parsedDate.getTime())) {
+        drawDate = parsedDate;
+      }
     }
-  });
 
-  revalidatePath('/');
-  revalidatePath('/admin');
-  redirect(`/rifa/${raffle.slug}`);
+    const hasInstantPrizes = formData.get('hasInstantPrizes') === 'on';
+    const instantPrizesCount = parseInt(formData.get('instantPrizesCount') as string) || 0;
+    const instantPrizesDetails = (formData.get('instantPrizesDetails') as string) || '[]';
+
+    const slug = title.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '') + '-' + Date.now().toString().slice(-4);
+
+    const raffle = await prisma.raffle.create({
+      data: {
+        title,
+        slug,
+        description,
+        imageUrl,
+        costPrice,
+        totalQuotas,
+        quotaPrice,
+        mpFeePercent: 0.99,
+        drawDate,
+        status: 'ACTIVE',
+        hasInstantPrizes,
+        instantPrizesCount,
+        instantPrizesDetails,
+      }
+    });
+
+    revalidatePath('/');
+    revalidatePath('/admin');
+    redirect(`/rifa/${raffle.slug}`);
+  } catch (error: any) {
+    if (error?.digest?.startsWith('NEXT_REDIRECT') || error?.message === 'NEXT_REDIRECT') {
+      throw error;
+    }
+    console.error('Erro ao criar rifa:', error);
+    throw new Error(error?.message || 'Erro ao criar a rifa no banco de dados.');
+  }
 }
 
 export async function createCheckoutOrderAction(formData: FormData) {
-  const raffleId = formData.get('raffleId') as string;
-  const quantity = parseInt(formData.get('quantity') as string) || 1;
-  const buyerName = formData.get('buyerName') as string;
-  const buyerPhone = formData.get('buyerPhone') as string;
-  const buyerEmail = formData.get('buyerEmail') as string;
+  try {
+    const raffleId = formData.get('raffleId') as string;
+    const quantity = parseInt(formData.get('quantity') as string) || 1;
+    const buyerName = formData.get('buyerName') as string;
+    const buyerPhone = formData.get('buyerPhone') as string;
+    const buyerEmail = formData.get('buyerEmail') as string;
 
-  const raffle = await prisma.raffle.findUnique({ where: { id: raffleId } });
-  if (!raffle) throw new Error('Rifa não encontrada');
+    const raffle = await prisma.raffle.findUnique({ where: { id: raffleId } });
+    if (!raffle) throw new Error('Rifa não encontrada.');
 
-  const totalAmount = Number((quantity * raffle.quotaPrice).toFixed(2));
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    const totalAmount = Number((quantity * raffle.quotaPrice).toFixed(2));
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-  const order = await prisma.order.create({
-    data: {
-      raffleId: raffle.id,
+    const order = await prisma.order.create({
+      data: {
+        raffleId: raffle.id,
+        buyerName,
+        buyerPhone,
+        buyerEmail,
+        quantity,
+        totalAmount,
+        expiresAt,
+      }
+    });
+
+    const pixData = await createPixPayment({
+      orderId: order.id,
+      title: raffle.title,
+      amount: totalAmount,
       buyerName,
-      buyerPhone,
       buyerEmail,
-      quantity,
-      totalAmount,
-      expiresAt,
+    });
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        mpPaymentId: pixData.paymentId,
+        mpQrCode: pixData.qrCode,
+        mpPixCopiaECola: pixData.pixCopiaECola,
+      }
+    });
+
+    redirect(`/pedido/${order.id}`);
+  } catch (error: any) {
+    if (error?.digest?.startsWith('NEXT_REDIRECT') || error?.message === 'NEXT_REDIRECT') {
+      throw error;
     }
-  });
-
-  const pixData = await createPixPayment({
-    orderId: order.id,
-    title: raffle.title,
-    amount: totalAmount,
-    buyerName,
-    buyerEmail,
-  });
-
-  await prisma.order.update({
-    where: { id: order.id },
-    data: {
-      mpPaymentId: pixData.paymentId,
-      mpQrCode: pixData.qrCode,
-      mpPixCopiaECola: pixData.pixCopiaECola,
-    }
-  });
-
-  redirect(`/pedido/${order.id}`);
+    console.error('Erro ao criar pedido:', error);
+    throw error;
+  }
 }
 
 export async function saveSettingsAction(formData: FormData) {
-  const keys = [
-    'MERCADOPAGO_ACCESS_TOKEN',
-    'MERCADOPAGO_PUBLIC_KEY',
-    'MERCADOPAGO_WEBHOOK_SECRET',
-    'NEXT_PUBLIC_SUPABASE_URL',
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY',
-    'ADMIN_PASSWORD'
-  ];
+  try {
+    const keys = [
+      'MERCADOPAGO_ACCESS_TOKEN',
+      'MERCADOPAGO_PUBLIC_KEY',
+      'MERCADOPAGO_WEBHOOK_SECRET',
+      'NEXT_PUBLIC_SUPABASE_URL',
+      'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+      'SUPABASE_SERVICE_ROLE_KEY',
+      'ADMIN_PASSWORD'
+    ];
 
-  for (const key of keys) {
-    const val = formData.get(key) as string;
-    if (val !== null && val !== undefined) {
-      await saveSetting(key, val);
+    for (const key of keys) {
+      const val = formData.get(key) as string;
+      if (val !== null && val !== undefined) {
+        await saveSetting(key, val);
+      }
     }
-  }
 
-  revalidatePath('/admin/configuracoes');
-  redirect('/admin/configuracoes?saved=true');
+    revalidatePath('/admin/configuracoes');
+    redirect('/admin/configuracoes?saved=true');
+  } catch (error: any) {
+    if (error?.digest?.startsWith('NEXT_REDIRECT') || error?.message === 'NEXT_REDIRECT') {
+      throw error;
+    }
+    console.error('Erro ao salvar configurações:', error);
+    throw error;
+  }
 }
