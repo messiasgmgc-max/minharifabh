@@ -21,14 +21,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
 
             <nav className="flex items-center gap-4 text-xs md:text-sm font-bold">
-              <Link href="/" className="text-slate-300 hover:text-emerald-400 transition-colors">
+              <Link href="/" className="text-slate-300 hover:text-emerald-400 transition-colors flex items-center gap-1.5">
                 🔥 Rifas Ativas
               </Link>
-              <Link href="/meus-numeros" className="text-slate-300 hover:text-emerald-400 transition-colors">
+              <Link href="/meus-numeros" className="text-slate-300 hover:text-emerald-400 transition-colors flex items-center gap-1.5">
                 🔍 Meus Números
-              </Link>
-              <Link href="/admin" className="bg-slate-900 hover:bg-slate-800 text-emerald-400 px-3.5 py-1.5 rounded-full border border-emerald-500/30 transition-all text-xs font-extrabold shadow-sm">
-                ⚙️ Admin
               </Link>
             </nav>
           </div>
