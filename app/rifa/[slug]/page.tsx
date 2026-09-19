@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { formatCurrency } from '@/lib/finance';
+import { formatCurrency, formatTicketNumber } from '@/lib/finance';
 import { notFound } from 'next/navigation';
 import { RaffleCheckoutForm } from '@/components/RaffleCheckoutForm';
 import { RaffleImageGallery } from '@/components/RaffleImageGallery';
@@ -92,6 +92,17 @@ export default async function RaffleDetailPage({ params }: { params: { slug: str
           </p>
         </div>
 
+        {/* Transparência e Regra do Sorteio pela Loteria Federal */}
+        <div className="bg-slate-950/80 border border-emerald-500/20 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl space-y-2">
+          <div className="flex items-center gap-2 text-emerald-400 font-black text-xs">
+            <span>🏛️</span>
+            <span>SORTEIO 100% SEGURO PELA LOTERIA FEDERAL</span>
+          </div>
+          <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed">
+            O número contemplado é apurado com base no <strong>1º Prêmio da Loteria Federal</strong> (usando os últimos dígitos correspondentes à quantidade de cotas). Totalmente auditável e imparcial!
+          </p>
+        </div>
+
         {/* Descrição */}
         <div className="space-y-1.5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Sobre o Prêmio</h3>
@@ -122,7 +133,7 @@ export default async function RaffleDetailPage({ params }: { params: { slug: str
                     <div key={w.id} className="bg-slate-950 p-2.5 rounded-xl border border-amber-500/30 text-xs flex justify-between items-center">
                       <div>
                         <span className="font-bold text-white block">{w.order?.buyerName}</span>
-                        <span className="text-slate-400 text-[10px]">Cota #{String(w.number).padStart(4, '0')}</span>
+                        <span className="text-slate-400 text-[10px]">Cota #{formatTicketNumber(w.number, raffle.totalQuotas)}</span>
                       </div>
                       <span className="text-amber-400 font-extrabold">{w.instantPrize}</span>
                     </div>

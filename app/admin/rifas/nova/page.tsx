@@ -224,10 +224,10 @@ export default function NewRafflePage() {
           <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-2xl space-y-3">
             <div className="flex justify-between items-center">
               <label className="text-xs text-emerald-400 font-black uppercase tracking-wider block">
-                🎯 Quantidade Total de Cotas / Rifas
+                🎯 Quantidade Total de Cotas (Padrão Loteria Federal)
               </label>
               <span className="text-xs text-slate-400 font-mono font-bold">
-                {totalQuotas.toLocaleString('pt-BR')} números (0001 até {String(totalQuotas).padStart(4, '0')})
+                {totalQuotas.toLocaleString('pt-BR')} números ({String(0).padStart(totalQuotas >= 1000000 ? 6 : totalQuotas >= 100000 ? 5 : totalQuotas >= 10000 ? 4 : totalQuotas >= 1000 ? 3 : 2, '0')} até {String(totalQuotas - 1).padStart(totalQuotas >= 1000000 ? 6 : totalQuotas >= 100000 ? 5 : totalQuotas >= 10000 ? 4 : totalQuotas >= 1000 ? 3 : 2, '0')})
               </span>
             </div>
 

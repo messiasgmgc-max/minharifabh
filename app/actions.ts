@@ -183,13 +183,13 @@ export async function createCheckoutOrderAction(formData: FormData) {
       try {
         const p = JSON.parse(selectedNumbersRaw);
         if (Array.isArray(p)) {
-          parsedNumbers = p.map(Number).filter(n => !isNaN(n) && n >= 1 && n <= raffle.totalQuotas);
+          parsedNumbers = p.map(Number).filter(n => !isNaN(n) && n >= 0 && n < raffle.totalQuotas);
         }
       } catch (e) {
         // Tenta comma-separated
         parsedNumbers = selectedNumbersRaw.split(',')
           .map(s => parseInt(s.trim()))
-          .filter(n => !isNaN(n) && n >= 1 && n <= raffle.totalQuotas);
+          .filter(n => !isNaN(n) && n >= 0 && n < raffle.totalQuotas);
       }
     }
 

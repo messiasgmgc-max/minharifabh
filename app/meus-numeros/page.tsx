@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { formatCurrency } from '@/lib/finance';
+import { formatCurrency, formatTicketNumber } from '@/lib/finance';
 
 export const revalidate = 0;
 
@@ -86,7 +86,7 @@ export default async function MyNumbersPage({ searchParams }: { searchParams: { 
                   <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-0.5">
                     {order.tickets?.map((t: any) => (
                       <span key={t.id} className="bg-slate-950 text-emerald-400 border border-slate-800 text-xs px-2.5 py-1 rounded-lg font-mono font-black">
-                        #{String(t.number).padStart(4, '0')}
+                        #{formatTicketNumber(t.number, order?.raffle?.totalQuotas)}
                         {t.isInstantWin && ' 🏆'}
                       </span>
                     ))}

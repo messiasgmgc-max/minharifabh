@@ -58,7 +58,7 @@ export async function allocateTicketsForOrder(orderId: string) {
     const totalQuotas = order.raffle?.totalQuotas || 1000;
     const availableNumbers: number[] = [];
 
-    for (let n = 1; n <= totalQuotas; n++) {
+    for (let n = 0; n < totalQuotas; n++) {
       if (!takenNumbersSet.has(n)) {
         availableNumbers.push(n);
       }

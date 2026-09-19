@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { formatCurrency } from '@/lib/finance';
+import { formatCurrency, formatTicketNumber } from '@/lib/finance';
 import Link from 'next/link';
 
 export default function OrderPaymentPage({ params }: { params: { id: string } }) {
@@ -111,7 +111,7 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
                       : 'bg-slate-900 text-slate-100 border-slate-700'
                   }`}
                 >
-                  #{String(t.number).padStart(4, '0')}
+                  #{formatTicketNumber(t.number, order?.raffle?.totalQuotas)}
                   {t.isInstantWin && ' 🏆'}
                 </span>
               ))}

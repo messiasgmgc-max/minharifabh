@@ -51,7 +51,7 @@ export function RaffleCheckoutForm({
   // Surpresinha: adiciona N números aleatórios disponíveis
   const handleSurprisePick = (count: number) => {
     const availablePool: number[] = [];
-    for (let n = 1; n <= totalQuotas; n++) {
+    for (let n = 0; n < totalQuotas; n++) {
       if (!takenSet.has(n) && !selectedSet.has(n)) {
         availablePool.push(n);
       }
@@ -81,10 +81,10 @@ export function RaffleCheckoutForm({
       const term = searchTerm.trim().replace('#', '');
       const parsed = parseInt(term);
       const results: number[] = [];
-      if (!isNaN(parsed) && parsed >= 1 && parsed <= totalQuotas) {
+      if (!isNaN(parsed) && parsed >= 0 && parsed < totalQuotas) {
         results.push(parsed);
       }
-      for (let n = 1; n <= totalQuotas; n++) {
+      for (let n = 0; n < totalQuotas; n++) {
         if (results.length >= 40) break;
         if (n !== parsed && String(n).includes(term)) {
           results.push(n);
@@ -97,18 +97,18 @@ export function RaffleCheckoutForm({
       return selectedNumbers;
     }
 
-    const start = (page - 1) * PAGE_SIZE + 1;
+    const start = (page - 1) * PAGE_SIZE;
     const end = Math.min(totalQuotas, page * PAGE_SIZE);
     const nums: number[] = [];
 
-    for (let n = start; n <= end; n++) {
+    for (let n = start; n < end; n++) {
       if (filterType === 'AVAILABLE' && takenSet.has(n)) continue;
       nums.push(n);
     }
     return nums;
   }, [searchTerm, filterType, page, totalQuotas, selectedNumbers, takenSet]);
 
-  const padDigits = totalQuotas >= 10000 ? 5 : totalQuotas >= 1000 ? 4 : 3;
+  const padDigits = totalQuotas >= 1000000 ? 6 : totalQuotas >= 100000 ? 5 : totalQuotas >= 10000 ? 4 : totalQuotas >= 1000 ? 3 : 2;
 
   return (
     <div className="bg-slate-900/95 border border-emerald-500/30 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl space-y-5 shadow-2xl backdrop-blur">
