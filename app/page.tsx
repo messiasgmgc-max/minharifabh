@@ -10,6 +10,7 @@ export default async function HomePage() {
     const { data } = await supabase
       .from('Raffle')
       .select('*, tickets:Ticket(id)')
+      .eq('status', 'ACTIVE')
       .order('createdAt', { ascending: false });
     raffles = data || [];
   } catch (e) {

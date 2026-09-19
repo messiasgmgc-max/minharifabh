@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, calculateRaffleFinances } from '@/lib/finance';
-import { logoutAdminAction, toggleRaffleStatusAction } from '@/app/actions';
+import { logoutAdminAction, toggleRaffleStatusAction, deleteRaffleAction } from '@/app/actions';
 
 export const revalidate = 0;
 
@@ -142,12 +142,25 @@ export default async function AdminDashboardPage() {
                       </button>
                     </form>
 
-                    <Link
-                      href={`/rifa/${r.slug}`}
-                      className="text-xs font-bold text-emerald-400 hover:text-emerald-300"
-                    >
-                      Ver Rifa →
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/rifa/${r.slug}`}
+                        className="text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                      >
+                        Ver Rifa →
+                      </Link>
+
+                      <form action={deleteRaffleAction}>
+                        <input type="hidden" name="raffleId" value={r.id} />
+                        <button
+                          type="submit"
+                          title="Excluir Rifa"
+                          className="text-[11px] font-bold text-rose-400/70 hover:text-rose-400 p-1 rounded transition-colors"
+                        >
+                          🗑️
+                        </button>
+                      </form>
+                    </div>
                   </div>
                 </div>
               );
@@ -215,9 +228,22 @@ export default async function AdminDashboardPage() {
                       <td className="p-3">{formatCurrency(r.quotaPrice)}</td>
                       <td className="p-3 font-black text-emerald-400">{formatCurrency(fin.netProfit)}</td>
                       <td className="p-3 text-right">
-                        <Link href={`/rifa/${r.slug}`} className="text-emerald-400 font-bold hover:underline">
-                          Ver Rifa →
-                        </Link>
+                        <div className="flex items-center justify-end gap-3">
+                          <Link href={`/rifa/${r.slug}`} className="text-emerald-400 font-bold hover:underline">
+                            Ver Rifa →
+                          </Link>
+
+                          <form action={deleteRaffleAction}>
+                            <input type="hidden" name="raffleId" value={r.id} />
+                            <button
+                              type="submit"
+                              title="Excluir Rifa Definitivamente"
+                              className="text-rose-400/70 hover:text-rose-400 text-sm p-1 rounded transition-colors"
+                            >
+                              🗑️
+                            </button>
+                          </form>
+                        </div>
                       </td>
                     </tr>
                   );

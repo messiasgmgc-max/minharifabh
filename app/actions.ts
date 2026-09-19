@@ -54,6 +54,27 @@ export async function toggleRaffleStatusAction(formData: FormData) {
   }
 }
 
+export async function deleteRaffleAction(formData: FormData) {
+  try {
+    const raffleId = formData.get('raffleId') as string;
+
+    const { error } = await supabase
+      .from('Raffle')
+      .delete()
+      .eq('id', raffleId);
+
+    if (error) {
+      console.error('Erro ao excluir rifa:', error);
+      throw new Error('Erro ao excluir rifa.');
+    }
+
+    revalidatePath('/');
+    revalidatePath('/admin');
+  } catch (error: any) {
+    console.error('Erro em deleteRaffleAction:', error);
+  }
+}
+
 export async function createRaffleAction(formData: FormData) {
   try {
     const title = (formData.get('title') as string || '').trim();
