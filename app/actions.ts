@@ -84,8 +84,8 @@ export async function createRaffleAction(formData: FormData) {
     const selectionMode = (formData.get('selectionMode') as string) || 'BOTH'; // 'AUTOMATIC' | 'MANUAL' | 'BOTH'
     const drawDateStr = formData.get('drawDate') as string;
     
-    let drawDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-    if (drawDateStr) {
+    let drawDate: string | null = null;
+    if (drawDateStr && drawDateStr.trim()) {
       const parsedDate = new Date(drawDateStr);
       if (!isNaN(parsedDate.getTime())) {
         drawDate = parsedDate.toISOString();

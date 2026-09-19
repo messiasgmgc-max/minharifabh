@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS "Raffle" (
     "totalQuotas" INTEGER NOT NULL,
     "quotaPrice" DOUBLE PRECISION NOT NULL,
     "mpFeePercent" DOUBLE PRECISION NOT NULL DEFAULT 0.99,
-    "drawDate" TIMESTAMP(3) NOT NULL,
+    "drawDate" TIMESTAMP(3), -- Opcional / A definir
     "status" TEXT NOT NULL DEFAULT 'ACTIVE', -- 'ACTIVE' | 'INACTIVE'
     "selectionMode" TEXT NOT NULL DEFAULT 'BOTH', -- 'AUTOMATIC' | 'MANUAL' | 'BOTH'
     "hasInstantPrizes" BOOLEAN NOT NULL DEFAULT false,
@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS "Setting" (
 -- Migrações seguras caso as tabelas já existam
 ALTER TABLE "Raffle" ADD COLUMN IF NOT EXISTS "selectionMode" TEXT NOT NULL DEFAULT 'BOTH';
 ALTER TABLE "Raffle" ADD COLUMN IF NOT EXISTS "images" TEXT;
+ALTER TABLE "Raffle" ALTER COLUMN "drawDate" DROP NOT NULL;
 ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "selectedNumbers" TEXT;
 
 -- Criar Índices de Alta Performance

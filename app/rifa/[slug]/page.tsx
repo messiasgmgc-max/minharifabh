@@ -86,7 +86,9 @@ export default async function RaffleDetailPage({ params }: { params: { slug: str
             <div className="bg-gradient-to-r from-emerald-500 to-teal-300 h-full transition-all duration-500" style={{ width: `${progressPercent}%` }} />
           </div>
           <p className="text-[11px] sm:text-xs text-slate-500 text-right font-medium pt-0.5">
-            Data Prevista: {new Date(raffle.drawDate).toLocaleDateString('pt-BR')}
+            {raffle.drawDate
+              ? `Data do Sorteio: ${new Date(raffle.drawDate).toLocaleDateString('pt-BR')}`
+              : '🎯 Sorteio ao finalizar 100% das cotas'}
           </p>
         </div>
 

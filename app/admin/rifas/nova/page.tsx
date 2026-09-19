@@ -362,11 +362,13 @@ export default function NewRafflePage() {
           </div>
 
           <div>
-            <label className="text-xs text-slate-400 font-bold block mb-1">Data Prevista do Sorteio</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-xs text-slate-400 font-bold block">Data do Sorteio (Opcional)</label>
+              <span className="text-[10px] text-slate-500">Deixe em branco se for sorteado ao bater 100%</span>
+            </div>
             <input
               type="date"
               name="drawDate"
-              required
               className="w-full bg-slate-950 border border-slate-800 rounded-xl sm:rounded-2xl p-3 text-sm text-white focus:outline-none focus:border-emerald-400"
             />
           </div>

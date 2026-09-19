@@ -4,17 +4,25 @@ import { formatCurrency } from '@/lib/finance';
 export const revalidate = 0;
 
 export default async function MyNumbersPage({ searchParams }: { searchParams: { phone?: string } }) {
-  const phoneQuery = searchParams.phone || '';
+  const rawPhoneQuery = searchParams.phone || '';
+  const cleanPhone = rawPhoneQuery.replace(/\D/g, '');
 
   let orders: any[] = [];
-  if (phoneQuery) {
+  if (cleanPhone || rawPhoneQuery) {
     try {
-      const { data } = await supabase
+      let query = supabase
         .from('Order')
         .select('*, raffle:Raffle(*), tickets:Ticket(*)')
-        .ilike('buyerPhone', `%${phoneQuery}%`)
         .eq('status', 'PAID')
         .order('createdAt', { ascending: false });
+
+      if (cleanPhone) {
+        query = query.or(`buyerPhone.ilike.%${cleanPhone}%,buyerPhone.ilike.%${rawPhoneQuery}%`);
+      } else {
+        query = query.ilike('buyerPhone', `%${rawPhoneQuery}%`);
+      }
+
+      const { data } = await query;
       orders = data || [];
     } catch (e) {
       console.error(e);
@@ -38,7 +46,7 @@ export default async function MyNumbersPage({ searchParams }: { searchParams: { 
           inputMode="tel"
           autoComplete="tel"
           name="phone"
-          defaultValue={phoneQuery}
+          defaultValue={rawPhoneQuery}
           placeholder="DDD + Telefone (ex: 31999999999)"
           required
           className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
@@ -51,7 +59,7 @@ export default async function MyNumbersPage({ searchParams }: { searchParams: { 
         </button>
       </form>
 
-      {phoneQuery && (
+      {rawPhoneQuery && (
         <div className="space-y-3 pt-2">
           {orders.length === 0 ? (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400 space-y-2">
