@@ -13,6 +13,7 @@ export default function NewRafflePage() {
   const [quotaPrice, setQuotaPrice] = useState(3.50);
   const [selectionMode, setSelectionMode] = useState<'BOTH' | 'MANUAL' | 'AUTOMATIC'>('BOTH');
   const [images, setImages] = useState<string[]>([]);
+  const [passMpFeeToBuyer, setPassMpFeeToBuyer] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<'16/9' | '4/3' | '3/4'>('3/4');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -22,6 +23,7 @@ export default function NewRafflePage() {
     quotaPrice,
     costPrice,
     mpFeePercent: 0.99,
+    passMpFeeToBuyer,
   });
 
   const handleMultipleFilesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -374,6 +376,33 @@ export default function NewRafflePage() {
                 required
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl sm:rounded-2xl p-3 text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
               />
+            </div>
+          </div>
+
+          {/* Repasse da Taxa do Mercado Pago (0.99%) */}
+          <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-2xl space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-xs text-white font-black uppercase tracking-wider block flex items-center gap-1.5">
+                  💳 Repassar Taxa Mercado Pago (0.99%) ao Cliente
+                </label>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {passMpFeeToBuyer
+                    ? `O cliente paga ${formatCurrency(finances.effectiveQuotaPrice)} por cota (+0.99% taxa PIX embutida). Você recebe 100% livre!`
+                    : `Você absorve a taxa de 0.99%. O cliente paga ${formatCurrency(quotaPrice)} exatos por cota.`}
+                </p>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="passMpFeeToBuyer"
+                  checked={passMpFeeToBuyer}
+                  onChange={(e) => setPassMpFeeToBuyer(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
+              </label>
             </div>
           </div>
 

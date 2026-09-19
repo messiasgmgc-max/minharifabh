@@ -11,6 +11,8 @@ interface RaffleCheckoutFormProps {
   totalQuotas?: number;
   selectionMode?: string; // 'AUTOMATIC' | 'MANUAL' | 'BOTH'
   takenNumbers?: number[];
+  passMpFeeToBuyer?: boolean;
+  mpFeePercent?: number;
 }
 
 const PAGE_SIZE = 100;
@@ -22,6 +24,8 @@ export function RaffleCheckoutForm({
   totalQuotas = 1000,
   selectionMode = 'BOTH',
   takenNumbers = [],
+  passMpFeeToBuyer = false,
+  mpFeePercent = 0.99,
 }: RaffleCheckoutFormProps) {
   const initialMode = selectionMode === 'MANUAL' ? 'MANUAL' : 'RANDOM';
   const [activeTab, setActiveTab] = useState<'RANDOM' | 'MANUAL'>(initialMode);
@@ -34,9 +38,14 @@ export function RaffleCheckoutForm({
   const takenSet = useMemo(() => new Set(takenNumbers), [takenNumbers]);
   const selectedSet = useMemo(() => new Set(selectedNumbers), [selectedNumbers]);
 
+  // Preço efetivo por cota
+  const effectivePricePerQuota = passMpFeeToBuyer
+    ? Number((quotaPrice * (1 + mpFeePercent / 100)).toFixed(2))
+    : quotaPrice;
+
   // Quantidade e total calculados
   const currentQuantity = activeTab === 'MANUAL' ? selectedNumbers.length : randomQuantity;
-  const totalAmount = Number((currentQuantity * quotaPrice).toFixed(2));
+  const totalAmount = Number((currentQuantity * effectivePricePerQuota).toFixed(2));
 
   // Toggle número na seleção manual
   const toggleNumber = (num: number) => {
@@ -397,7 +406,12 @@ export function RaffleCheckoutForm({
           <div>
             <span className="text-[11px] sm:text-xs text-slate-400 font-bold uppercase block">Total a Pagar:</span>
             <span className="text-[11px] text-slate-500">
-              {currentQuantity} {currentQuantity === 1 ? 'cota' : 'cotas'} x {formatCurrency(quotaPrice)}
+              {currentQuantity} {currentQuantity === 1 ? 'cota' : 'cotas'} x {formatCurrency(effectivePricePerQuota)}
+              {passMpFeeToBuyer && (
+                <span className="text-emerald-400 font-bold ml-1 text-[10px]">
+                  (taxa PIX inclusa)
+                </span>
+              )}
             </span>
           </div>
           <span className="text-xl sm:text-2xl font-black text-emerald-400">{formatCurrency(totalAmount)}</span>

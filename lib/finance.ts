@@ -3,6 +3,7 @@ export interface FinanceCalculationInput {
   quotaPrice: number;
   costPrice: number;
   mpFeePercent?: number; // Padrão: 0.99% PIX Mercado Pago
+  passMpFeeToBuyer?: boolean; // Se true, a taxa do MP é repassada ao comprador na cota
 }
 
 export interface FinanceCalculationResult {
@@ -11,16 +12,23 @@ export interface FinanceCalculationResult {
   netRevenue: number;       // Receita Líquida após taxas
   netProfit: number;        // Lucro Líquido Real (Receita Líquida - Custo)
   profitMarginPercent: number; // Margem de Lucro %
+  effectiveQuotaPrice: number; // Valor da cota cobrado do cliente
 }
 
 /**
  * Calcula os custos, receita, taxa do Mercado Pago e lucro líquido estimado para uma rifa.
  */
 export function calculateRaffleFinances(input: FinanceCalculationInput): FinanceCalculationResult {
-  const { totalQuotas, quotaPrice, costPrice, mpFeePercent = 0.99 } = input;
+  const { totalQuotas, quotaPrice, costPrice, mpFeePercent = 0.99, passMpFeeToBuyer = false } = input;
 
-  const grossRevenue = totalQuotas * quotaPrice;
-  const mpFeeAmount = grossRevenue * (mpFeePercent / 100);
+  const feeMultiplier = mpFeePercent / 100;
+  // Se repassa a taxa pro cliente, o preço efetivo por cota inclui a taxa de 0.99%
+  const effectiveQuotaPrice = passMpFeeToBuyer 
+    ? Number((quotaPrice * (1 + feeMultiplier)).toFixed(2)) 
+    : quotaPrice;
+
+  const grossRevenue = totalQuotas * effectiveQuotaPrice;
+  const mpFeeAmount = grossRevenue * feeMultiplier;
   const netRevenue = grossRevenue - mpFeeAmount;
   const netProfit = netRevenue - costPrice;
   const profitMarginPercent = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
@@ -31,6 +39,7 @@ export function calculateRaffleFinances(input: FinanceCalculationInput): Finance
     netRevenue: Number(netRevenue.toFixed(2)),
     netProfit: Number(netProfit.toFixed(2)),
     profitMarginPercent: Number(profitMarginPercent.toFixed(1)),
+    effectiveQuotaPrice,
   };
 }
 

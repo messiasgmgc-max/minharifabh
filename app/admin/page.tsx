@@ -29,6 +29,7 @@ export default async function AdminDashboardPage() {
       quotaPrice: r.quotaPrice,
       costPrice: r.costPrice,
       mpFeePercent: r.mpFeePercent,
+      passMpFeeToBuyer: r.passMpFeeToBuyer,
     });
 
     totalGrossRevenue += finances.grossRevenue;
@@ -197,6 +198,7 @@ export default async function AdminDashboardPage() {
                     quotaPrice: r.quotaPrice,
                     costPrice: r.costPrice,
                     mpFeePercent: r.mpFeePercent,
+                    passMpFeeToBuyer: r.passMpFeeToBuyer,
                   });
                   const isActive = r.status === 'ACTIVE';
 

@@ -114,6 +114,7 @@ export async function createRaffleAction(formData: FormData) {
     }
 
     const hasInstantPrizes = formData.get('hasInstantPrizes') === 'on';
+    const passMpFeeToBuyer = formData.get('passMpFeeToBuyer') === 'on';
     const instantPrizesCount = parseInt(formData.get('instantPrizesCount') as string) || 0;
     const instantPrizesDetails = (formData.get('instantPrizesDetails') as string) || '[]';
 
@@ -135,6 +136,7 @@ export async function createRaffleAction(formData: FormData) {
         quotaPrice,
         selectionMode,
         mpFeePercent: 0.99,
+        passMpFeeToBuyer,
         drawDate,
         status: 'ACTIVE',
         hasInstantPrizes,
@@ -212,7 +214,13 @@ export async function createCheckoutOrderAction(formData: FormData) {
       }
     }
 
-    const totalAmount = Number((quantity * raffle.quotaPrice).toFixed(2));
+    // Preço efetivo por cota (repassando a taxa do MP de 0.99% se configurado)
+    const baseQuotaPrice = raffle.quotaPrice;
+    const effectivePricePerQuota = raffle.passMpFeeToBuyer
+      ? Number((baseQuotaPrice * (1 + (raffle.mpFeePercent || 0.99) / 100)).toFixed(2))
+      : baseQuotaPrice;
+
+    const totalAmount = Number((quantity * effectivePricePerQuota).toFixed(2));
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
     const { data: order, error: orderError } = await supabase

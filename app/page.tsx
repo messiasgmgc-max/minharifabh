@@ -88,7 +88,11 @@ export default async function HomePage() {
                       loading="lazy"
                     />
                     <div className="absolute top-2.5 right-2.5 z-20 bg-slate-950/90 backdrop-blur text-emerald-400 font-black text-xs px-2.5 py-1 rounded-full border border-emerald-500/30 shadow-lg">
-                      {formatCurrency(raffle.quotaPrice)} / cota
+                      {formatCurrency(
+                        raffle.passMpFeeToBuyer
+                          ? Number((raffle.quotaPrice * (1 + (raffle.mpFeePercent || 0.99) / 100)).toFixed(2))
+                          : raffle.quotaPrice
+                      )} / cota
                     </div>
                     {raffle.hasInstantPrizes && (
                       <div className="absolute bottom-2.5 left-2.5 z-20 bg-amber-400 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-md">

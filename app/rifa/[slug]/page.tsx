@@ -70,7 +70,13 @@ export default async function RaffleDetailPage({ params }: { params: { slug: str
 
           <div className="bg-slate-950 border border-emerald-500/40 px-4 py-2 rounded-xl text-left sm:text-right shadow-lg self-start sm:self-auto">
             <span className="text-[10px] text-slate-400 block font-bold uppercase">Valor da Cota</span>
-            <span className="text-xl sm:text-2xl font-black text-emerald-400">{formatCurrency(raffle.quotaPrice)}</span>
+            <span className="text-xl sm:text-2xl font-black text-emerald-400">
+              {formatCurrency(
+                raffle.passMpFeeToBuyer
+                  ? Number((raffle.quotaPrice * (1 + (raffle.mpFeePercent || 0.99) / 100)).toFixed(2))
+                  : raffle.quotaPrice
+              )}
+            </span>
           </div>
         </div>
       </div>
@@ -154,6 +160,8 @@ export default async function RaffleDetailPage({ params }: { params: { slug: str
               totalQuotas={raffle.totalQuotas}
               selectionMode={raffle.selectionMode || 'BOTH'}
               takenNumbers={takenNumbers}
+              passMpFeeToBuyer={raffle.passMpFeeToBuyer}
+              mpFeePercent={raffle.mpFeePercent || 0.99}
             />
           </div>
         ) : (
