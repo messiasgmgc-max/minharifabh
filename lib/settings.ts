@@ -6,17 +6,21 @@ import { supabase } from './supabase';
  */
 export async function getSetting(key: string, defaultValue: string = ''): Promise<string> {
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('Setting')
       .select('value')
       .eq('key', key)
       .maybeSingle();
 
-    if (data && data.value) {
-      return data.value;
+    if (error) {
+      console.warn(`[getSetting ${key}] Aviso Supabase:`, error.message);
+    }
+
+    if (data && typeof data.value === 'string' && data.value.trim() !== '') {
+      return data.value.trim();
     }
   } catch (e) {
-    // Silencioso se banco estiver inicializando
+    console.warn(`[getSetting ${key}] Erro ao consultar banco:`, e);
   }
   return process.env[key] || defaultValue;
 }
@@ -26,10 +30,17 @@ export async function getSetting(key: string, defaultValue: string = ''): Promis
  */
 export async function saveSetting(key: string, value: string): Promise<void> {
   try {
-    await supabase
+    const val = (value || '').trim();
+    const { error } = await supabase
       .from('Setting')
-      .upsert({ key, value, updatedAt: new Date().toISOString() }, { onConflict: 'key' });
+      .upsert({ key, value: val, updatedAt: new Date().toISOString() }, { onConflict: 'key' });
+
+    if (error) {
+      console.error(`Erro ao salvar setting ${key} no Supabase:`, error);
+      throw error;
+    }
   } catch (e) {
     console.error(`Erro ao salvar setting ${key}:`, e);
+    throw e;
   }
 }

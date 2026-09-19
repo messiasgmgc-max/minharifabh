@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { mpPayment } from '@/lib/mercadopago';
+import { getPaymentStatus } from '@/lib/mercadopago';
 import { allocateTicketsForOrder } from '@/lib/ticket-allocator';
 
 export async function POST(req: Request) {
@@ -14,16 +14,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
-    let status = 'approved';
-    let externalReference = '';
-
-    try {
-      const paymentInfo = await mpPayment.get({ id: paymentId });
-      status = paymentInfo.status || 'pending';
-      externalReference = paymentInfo.external_reference || '';
-    } catch (e) {
-      console.warn('[Webhook Warning] Não foi possível consultar API do MP, simulando status aprovado:', e);
-    }
+    const paymentInfo = await getPaymentStatus(String(paymentId));
+    const status = paymentInfo?.status || 'pending';
+    const externalReference = paymentInfo?.externalReference || '';
 
     if (status === 'approved') {
       const { data: order } = await supabase

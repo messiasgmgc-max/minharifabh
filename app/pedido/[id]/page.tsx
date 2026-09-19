@@ -7,7 +7,7 @@ import Link from 'next/link';
 export default function OrderPaymentPage({ params }: { params: { id: string } }) {
   const [order, setOrder] = useState<any>(null);
   const [copied, setCopied] = useState(false);
-  const [simulating, setSimulating] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   const fetchOrder = async () => {
     try {
@@ -27,19 +27,28 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
     return () => clearInterval(interval);
   }, [params.id]);
 
+  // Contador regressivo de 5 minutos
+  useEffect(() => {
+    if (!order || order.status !== 'PENDING' || !order.expiresAt) return;
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const expires = new Date(order.expiresAt).getTime();
+      const diff = Math.max(0, Math.floor((expires - now) / 1000));
+      setTimeLeft(diff);
+    };
+
+    updateTimer();
+    const timerInterval = setInterval(updateTimer, 1000);
+    return () => clearInterval(timerInterval);
+  }, [order?.expiresAt, order?.status]);
+
   const handleCopyPix = () => {
     if (order?.mpPixCopiaECola) {
       navigator.clipboard.writeText(order.mpPixCopiaECola);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
     }
-  };
-
-  const handleSimulatePayment = async () => {
-    setSimulating(true);
-    await fetch(`/api/simular-pagamento/${params.id}`, { method: 'POST' });
-    await fetchOrder();
-    setSimulating(false);
   };
 
   if (!order) {
@@ -52,6 +61,7 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
   }
 
   const isPaid = order.status === 'PAID';
+  const isExpired = order.status === 'EXPIRED' || (timeLeft !== null && timeLeft <= 0 && !isPaid);
 
   let selectedNumbersList: number[] = [];
   if (order.selectedNumbers) {
@@ -66,6 +76,12 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
       console.warn(e);
     }
   }
+
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
 
   return (
     <div className="max-w-lg mx-auto space-y-4 sm:space-y-6 py-2 sm:py-6">
@@ -115,15 +131,43 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
             Voltar para os Sorteios
           </Link>
         </div>
-      ) : (
-        /* Tela de Checkout PIX Mobile First */
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-8 space-y-5 text-center shadow-2xl">
+      ) : isExpired ? (
+        /* Tela de Pedido Expirado */
+        <div className="bg-slate-900 border border-rose-500/40 rounded-2xl sm:rounded-3xl p-6 sm:p-8 space-y-5 text-center shadow-2xl">
+          <div className="w-16 h-16 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center mx-auto text-3xl font-black border border-rose-500/30">
+            ⏱️
+          </div>
           <div className="space-y-1">
-            <span className="inline-flex items-center gap-1 bg-amber-400/10 text-amber-400 text-[11px] font-black px-3 py-1 rounded-full border border-amber-400/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-              Aguardando Pagamento PIX
-            </span>
-            <h1 className="text-lg sm:text-xl font-black text-white mt-1.5 line-clamp-1">{order.raffle?.title}</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-white">Pedido Expirado</h1>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              O prazo de 5 minutos para pagamento via PIX expirou. As cotas reservadas foram liberadas para outros compradores.
+            </p>
+          </div>
+
+          <Link
+            href={order.raffle?.slug ? `/rifa/${order.raffle.slug}` : '/'}
+            className="block w-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 text-slate-950 font-black py-4 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+          >
+            🔄 Fazer Novo Pedido
+          </Link>
+        </div>
+      ) : (
+        /* Tela de Checkout PIX Ativo */
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-8 space-y-5 text-center shadow-2xl">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-center gap-2">
+              <span className="inline-flex items-center gap-1 bg-amber-400/10 text-amber-400 text-[11px] font-black px-3 py-1 rounded-full border border-amber-400/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                Aguardando PIX
+              </span>
+              {timeLeft !== null && (
+                <span className="inline-flex items-center gap-1 bg-rose-500/10 text-rose-400 text-[11px] font-mono font-bold px-3 py-1 rounded-full border border-rose-500/20">
+                  ⏱️ Expira em {formatTimer(timeLeft)}
+                </span>
+              )}
+            </div>
+            
+            <h1 className="text-lg sm:text-xl font-black text-white mt-1 line-clamp-1">{order.raffle?.title}</h1>
             <p className="text-xs text-slate-400">{order.quantity} cotas • Total: <strong className="text-emerald-400">{formatCurrency(order.totalAmount)}</strong></p>
           </div>
 
@@ -150,10 +194,20 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
             <p className="text-[10px] text-slate-500">Toque no botão acima para copiar e cole no app do seu banco</p>
           </div>
 
-          {/* QR Code PIX Centralizado */}
-          <div className="bg-white p-3 sm:p-4 rounded-2xl inline-block shadow-xl mx-auto border border-slate-700">
+          {/* QR Code PIX Centralizado e Nítido */}
+          <div className="bg-white p-3.5 rounded-2xl inline-block shadow-xl mx-auto border border-slate-700">
             {order.mpQrCode ? (
-              <img src={`data:image/png;base64,${order.mpQrCode}`} alt="QR Code PIX" className="w-40 h-40 sm:w-48 sm:h-48 mx-auto" />
+              <img
+                src={`data:image/png;base64,${order.mpQrCode}`}
+                alt="QR Code PIX Mercado Pago"
+                className="w-40 h-40 sm:w-48 sm:h-48 mx-auto object-contain"
+              />
+            ) : order.mpPixCopiaECola ? (
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(order.mpPixCopiaECola)}`}
+                alt="QR Code PIX"
+                className="w-40 h-40 sm:w-48 sm:h-48 mx-auto object-contain"
+              />
             ) : (
               <div className="w-40 h-40 sm:w-48 sm:h-48 bg-slate-100 flex items-center justify-center text-xs text-slate-600 font-bold">
                 Carregando QR Code...
@@ -168,10 +222,10 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
             </span>
             <ol className="space-y-1.5 text-slate-300 text-[11px] list-decimal list-inside font-medium">
               <li>Toque no botão <strong className="text-amber-300">"Copiar Código PIX"</strong> acima</li>
-              <li>Abra o aplicativo do seu banco (Nubank, Inter, Itaú, etc.)</li>
+              <li>Abra o aplicativo do seu banco (Nubank, Inter, Caixa, Itaú, etc.)</li>
               <li>Vá na opção <strong className="text-amber-300">PIX Copia e Cola</strong></li>
               <li>Cole o código e confirme o pagamento</li>
-              <li>Esta tela atualizará automaticamente em segundos!</li>
+              <li>Esta tela atualizará automaticamente em segundos assim que pago!</li>
             </ol>
           </div>
 
@@ -190,17 +244,6 @@ export default function OrderPaymentPage({ params }: { params: { id: string } })
               </div>
             </div>
           )}
-
-          {/* Simulação em Teste */}
-          <div className="pt-2 border-t border-slate-800/80">
-            <button
-              onClick={handleSimulatePayment}
-              disabled={simulating}
-              className="w-full bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white font-semibold py-2.5 rounded-xl text-[11px] transition-all border border-slate-800 active:scale-95"
-            >
-              {simulating ? 'Aprovando...' : '⚡ Simular Aprovação PIX (Teste Rápido)'}
-            </button>
-          </div>
         </div>
       )}
     </div>

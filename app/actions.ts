@@ -149,7 +149,7 @@ export async function createCheckoutOrderAction(formData: FormData) {
     }
 
     const totalAmount = Number((quantity * raffle.quotaPrice).toFixed(2));
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
     const { data: order, error: orderError } = await supabase
       .from('Order')
