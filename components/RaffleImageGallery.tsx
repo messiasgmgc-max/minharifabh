@@ -22,15 +22,21 @@ export function RaffleImageGallery({ images, title }: RaffleImageGalleryProps) {
 
   return (
     <div className="space-y-2">
-      {/* Imagem Principal com Formato 16:9 / 4:3 Comportado no Mobile */}
-      <div className="relative w-full aspect-[4/3] sm:aspect-video bg-slate-950 rounded-2xl overflow-hidden shadow-2xl border border-slate-800 select-none group">
+      {/* Imagem Principal Responsiva sem cortes (Auto-adaptável com fundo blur cinematográfico) */}
+      <div className="relative w-full max-h-[75vh] min-h-[260px] sm:min-h-[360px] bg-slate-950 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-slate-800 select-none group flex items-center justify-center">
+        {/* Fundo com efeito ambient blur da própria foto */}
+        <div
+          className="absolute inset-0 bg-cover bg-center filter blur-2xl scale-110 opacity-30 transform-gpu"
+          style={{ backgroundImage: `url(${photoList[currentIndex]})` }}
+        />
+        <div className="absolute inset-0 bg-slate-950/40" />
+
+        {/* Foto completa sem nenhum corte */}
         <img
           src={photoList[currentIndex]}
           alt={`${title} - Foto ${currentIndex + 1}`}
-          className="w-full h-full object-cover transition-all duration-300"
+          className="relative z-10 w-full max-h-[70vh] object-contain transition-all duration-300 rounded-xl"
         />
-
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
 
         {/* Botões de Navegação se tiver mais de 1 foto */}
         {photoList.length > 1 && (
@@ -38,7 +44,7 @@ export function RaffleImageGallery({ images, title }: RaffleImageGalleryProps) {
             <button
               type="button"
               onClick={prevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-slate-950/80 hover:bg-slate-900 text-white w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border border-slate-700 active:scale-90 transition-all backdrop-blur"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 bg-slate-950/80 hover:bg-slate-900 text-white w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-bold border border-slate-700 active:scale-90 transition-all backdrop-blur shadow-lg"
               aria-label="Foto anterior"
             >
               ←
@@ -46,14 +52,14 @@ export function RaffleImageGallery({ images, title }: RaffleImageGalleryProps) {
             <button
               type="button"
               onClick={nextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-slate-950/80 hover:bg-slate-900 text-white w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border border-slate-700 active:scale-90 transition-all backdrop-blur"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 bg-slate-950/80 hover:bg-slate-900 text-white w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-bold border border-slate-700 active:scale-90 transition-all backdrop-blur shadow-lg"
               aria-label="Próxima foto"
             >
               →
             </button>
 
             {/* Contador de Fotos */}
-            <div className="absolute top-3 right-3 bg-slate-950/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full border border-slate-800 backdrop-blur shadow-md">
+            <div className="absolute top-3 right-3 z-20 bg-slate-950/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full border border-slate-800 backdrop-blur shadow-md">
               📷 {currentIndex + 1} / {photoList.length}
             </div>
           </>

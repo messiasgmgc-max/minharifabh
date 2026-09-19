@@ -13,7 +13,7 @@ export default function NewRafflePage() {
   const [quotaPrice, setQuotaPrice] = useState(3.50);
   const [selectionMode, setSelectionMode] = useState<'BOTH' | 'MANUAL' | 'AUTOMATIC'>('BOTH');
   const [images, setImages] = useState<string[]>([]);
-  const [aspectRatio, setAspectRatio] = useState<'16/9' | '4/3'>('16/9');
+  const [aspectRatio, setAspectRatio] = useState<'16/9' | '4/3' | '3/4'>('3/4');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
 
@@ -124,16 +124,15 @@ export default function NewRafflePage() {
               </div>
 
               {/* Seletor de Formato 16:9 / 4:3 */}
-              <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[10px] font-bold">
-                <span className="text-slate-500 px-1">Formato:</span>
+              <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[10px] font-bold">
                 <button
                   type="button"
-                  onClick={() => setAspectRatio('16/9')}
+                  onClick={() => setAspectRatio('3/4')}
                   className={`px-2.5 py-1 rounded-lg transition-all ${
-                    aspectRatio === '16/9' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                    aspectRatio === '3/4' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  16:9 (Widescreen)
+                  3:4 (Vertical / Celular)
                 </button>
                 <button
                   type="button"
@@ -144,6 +143,15 @@ export default function NewRafflePage() {
                 >
                   4:3 (Padrão)
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setAspectRatio('16/9')}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
+                    aspectRatio === '16/9' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  16:9 (Horizontal)
+                </button>
               </div>
             </div>
 
@@ -153,11 +161,19 @@ export default function NewRafflePage() {
                 {images.map((url, idx) => (
                   <div
                     key={idx}
-                    className={`relative rounded-xl overflow-hidden border group bg-slate-900 ${
-                      aspectRatio === '16/9' ? 'aspect-video' : 'aspect-[4/3]'
+                    className={`relative rounded-xl overflow-hidden border group bg-slate-950 flex items-center justify-center ${
+                      aspectRatio === '3/4'
+                        ? 'aspect-[3/4]'
+                        : aspectRatio === '16/9'
+                        ? 'aspect-video'
+                        : 'aspect-[4/3]'
                     } ${idx === 0 ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-800'}`}
                   >
-                    <img src={url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                    <div
+                      className="absolute inset-0 bg-cover bg-center filter blur-lg opacity-30"
+                      style={{ backgroundImage: `url(${url})` }}
+                    />
+                    <img src={url} alt={`Foto ${idx + 1}`} className="relative z-10 w-full h-full object-contain" />
 
                     {/* Badge Foto Principal */}
                     {idx === 0 && (

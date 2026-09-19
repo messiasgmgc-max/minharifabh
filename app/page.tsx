@@ -72,19 +72,26 @@ export default async function HomePage() {
 
               return (
                 <div key={raffle.id} className="bg-slate-900 border border-slate-800 hover:border-emerald-500/40 rounded-2xl md:rounded-3xl overflow-hidden transition-all duration-300 flex flex-col group shadow-xl hover:shadow-2xl">
-                  {/* Imagem do Produto */}
-                  <div className="relative h-48 sm:h-56 w-full bg-slate-950 overflow-hidden">
+                  {/* Imagem do Produto com Ambient Blur adaptável a qualquer proporção (3:4, 4:3, 16:9) */}
+                  <div className="relative h-52 sm:h-60 w-full bg-slate-950 overflow-hidden flex items-center justify-center">
+                    {/* Background Blur */}
+                    <div
+                      className="absolute inset-0 bg-cover bg-center filter blur-xl scale-125 opacity-40 transform-gpu"
+                      style={{ backgroundImage: `url(${raffle.imageUrl})` }}
+                    />
+                    <div className="absolute inset-0 bg-slate-950/30" />
+
                     <img
                       src={raffle.imageUrl}
                       alt={raffle.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="relative z-10 w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
                     />
-                    <div className="absolute top-2.5 right-2.5 bg-slate-950/90 backdrop-blur text-emerald-400 font-black text-xs px-2.5 py-1 rounded-full border border-emerald-500/30 shadow-lg">
+                    <div className="absolute top-2.5 right-2.5 z-20 bg-slate-950/90 backdrop-blur text-emerald-400 font-black text-xs px-2.5 py-1 rounded-full border border-emerald-500/30 shadow-lg">
                       {formatCurrency(raffle.quotaPrice)} / cota
                     </div>
                     {raffle.hasInstantPrizes && (
-                      <div className="absolute bottom-2.5 left-2.5 bg-amber-400 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-md">
+                      <div className="absolute bottom-2.5 left-2.5 z-20 bg-amber-400 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-md">
                         🏆 Prêmios Instantâneos
                       </div>
                     )}
