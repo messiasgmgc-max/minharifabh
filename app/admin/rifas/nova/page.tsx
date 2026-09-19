@@ -12,7 +12,8 @@ export default function NewRafflePage() {
   const [totalQuotas, setTotalQuotas] = useState(1000);
   const [quotaPrice, setQuotaPrice] = useState(3.50);
   const [selectionMode, setSelectionMode] = useState<'BOTH' | 'MANUAL' | 'AUTOMATIC'>('BOTH');
-  const [imageUrl, setImageUrl] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [aspectRatio, setAspectRatio] = useState<'16/9' | '4/3'>('16/9');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
 
@@ -23,44 +24,66 @@ export default function NewRafflePage() {
     mpFeePercent: 0.99,
   });
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleMultipleFilesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setUploading(true);
     setUploadError('');
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      const newUploadedUrls: string[] = [];
 
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
 
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        throw new Error(data.error || 'Erro ao enviar imagem.');
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || `Erro ao enviar ${file.name}`);
+        }
+
+        if (data.url) {
+          newUploadedUrls.push(data.url);
+        }
       }
 
-      setImageUrl(data.url);
+      setImages(prev => [...prev, ...newUploadedUrls]);
     } catch (err: any) {
-      setUploadError(err.message || 'Falha no upload para o Supabase Storage.');
+      setUploadError(err.message || 'Falha no upload das fotos.');
     } finally {
       setUploading(false);
     }
   };
 
+  const removeImage = (indexToRemove: number) => {
+    setImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const setAsCover = (index: number) => {
+    setImages(prev => {
+      const copy = [...prev];
+      const [item] = copy.splice(index, 1);
+      copy.unshift(item);
+      return copy;
+    });
+  };
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6 py-6">
+    <div className="max-w-3xl mx-auto space-y-5 py-2 sm:py-6">
       <div className="flex justify-between items-center">
         <div className="space-y-1">
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
             🎁 Criar Nova Rifa
           </h1>
           <p className="text-xs text-slate-400">
-            Cadastre o prêmio, configure a quantidade de cotas, modo de escolha e calcule seu lucro real.
+            Cadastre o prêmio com fotos, cotas, modo de escolha e lucro real.
           </p>
         </div>
         <Link
@@ -71,7 +94,10 @@ export default function NewRafflePage() {
         </Link>
       </div>
 
-      <form action={createRaffleAction} className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl backdrop-blur-xl">
+      <form action={createRaffleAction} className="bg-slate-900/90 border border-slate-800 rounded-2xl md:rounded-3xl p-4 sm:p-8 space-y-6 shadow-2xl backdrop-blur-xl">
+        <input type="hidden" name="imageUrl" value={images[0] || ''} />
+        <input type="hidden" name="images" value={JSON.stringify(images)} />
+
         <div className="space-y-5">
           {/* Título */}
           <div>
@@ -81,60 +107,105 @@ export default function NewRafflePage() {
               name="title"
               placeholder="Ex: iPhone 15 Pro Max 256GB Lacrado"
               required
-              className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-sm text-white focus:outline-none focus:border-emerald-400 transition-all font-medium"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl sm:rounded-2xl p-3.5 text-sm text-white focus:outline-none focus:border-emerald-400 transition-all font-medium"
             />
           </div>
 
-          {/* Campo de Upload Supabase Storage */}
-          <div className="space-y-2">
-            <label className="text-xs text-slate-400 font-bold block">
-              Imagem do Produto (Supabase Storage)
-            </label>
-            
-            <div className="bg-slate-950 border border-dashed border-slate-800 hover:border-emerald-500/50 rounded-2xl p-4 text-center space-y-3 transition-colors">
-              {imageUrl ? (
-                <div className="relative w-full h-48 rounded-xl overflow-hidden group">
-                  <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-slate-950/70 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                    <button
-                      type="button"
-                      onClick={() => setImageUrl('')}
-                      className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl"
-                    >
-                      🗑 Remover / Trocar Imagem
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="text-3xl">📷</div>
-                  <p className="text-xs text-slate-300 font-semibold">
-                    {uploading ? 'Enviando para o Supabase Storage...' : 'Selecione uma imagem para anexar'}
-                  </p>
-                  <p className="text-[11px] text-slate-500">PNG, JPG ou WEBP (Upload automático)</p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    disabled={uploading}
-                    className="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-500/20 file:text-emerald-400 hover:file:bg-emerald-500/30 cursor-pointer"
-                  />
-                </div>
-              )}
+          {/* Galeria de Fotos com Upload Múltiplo e Aspect Ratio (16:9 ou 4:3) */}
+          <div className="space-y-3 bg-slate-950/90 p-4 rounded-2xl border border-slate-800">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <label className="text-xs text-slate-300 font-black uppercase tracking-wider block">
+                  📷 Fotos do Produto (Aceita Múltiplas Fotos)
+                </label>
+                <span className="text-[11px] text-slate-500">
+                  Adicione uma ou mais imagens para criar a galeria/carrossel
+                </span>
+              </div>
 
-              {uploadError && (
-                <p className="text-xs font-bold text-rose-400">{uploadError}</p>
-              )}
+              {/* Seletor de Formato 16:9 / 4:3 */}
+              <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[10px] font-bold">
+                <span className="text-slate-500 px-1">Formato:</span>
+                <button
+                  type="button"
+                  onClick={() => setAspectRatio('16/9')}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
+                    aspectRatio === '16/9' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  16:9 (Widescreen)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAspectRatio('4/3')}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
+                    aspectRatio === '4/3' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  4:3 (Padrão)
+                </button>
+              </div>
             </div>
 
-            <input
-              type="text"
-              name="imageUrl"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="Ou cole a URL direta da imagem..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 focus:outline-none focus:border-emerald-400 font-mono"
-            />
+            {/* Grid de Previews de Fotos */}
+            {images.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2">
+                {images.map((url, idx) => (
+                  <div
+                    key={idx}
+                    className={`relative rounded-xl overflow-hidden border group bg-slate-900 ${
+                      aspectRatio === '16/9' ? 'aspect-video' : 'aspect-[4/3]'
+                    } ${idx === 0 ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-800'}`}
+                  >
+                    <img src={url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+
+                    {/* Badge Foto Principal */}
+                    {idx === 0 && (
+                      <span className="absolute top-2 left-2 bg-emerald-500 text-slate-950 text-[9px] font-black px-2 py-0.5 rounded-full shadow-md">
+                        ★ Capa Principal
+                      </span>
+                    )}
+
+                    {/* Ações na foto */}
+                    <div className="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 transition-opacity p-2">
+                      {idx !== 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setAsCover(idx)}
+                          className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-bold px-2 py-1 rounded-lg"
+                        >
+                          Tornar Capa
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Input de Upload de Fotos */}
+            <div className="border border-dashed border-slate-800 hover:border-emerald-500/50 rounded-xl p-4 text-center space-y-2 bg-slate-900/50 transition-colors">
+              <p className="text-xs text-slate-300 font-semibold">
+                {uploading ? 'Enviando fotos para o Supabase Storage...' : 'Selecione uma ou mais fotos do celular/computador'}
+              </p>
+              <p className="text-[11px] text-slate-500">Formatos aceitos: JPG, PNG, WEBP (Comportadas em 16:9 ou 4:3)</p>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleMultipleFilesUpload}
+                disabled={uploading}
+                className="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-500/20 file:text-emerald-400 hover:file:bg-emerald-500/30 cursor-pointer"
+              />
+              {uploadError && <p className="text-xs font-bold text-rose-400">{uploadError}</p>}
+            </div>
           </div>
 
           {/* Descrição */}
@@ -145,7 +216,7 @@ export default function NewRafflePage() {
               rows={3}
               placeholder="Detalhes sobre o produto, entrega e regra do sorteio..."
               required
-              className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-sm text-white focus:outline-none focus:border-emerald-400 transition-all font-medium"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl sm:rounded-2xl p-3.5 text-sm text-white focus:outline-none focus:border-emerald-400 transition-all font-medium"
             />
           </div>
 
@@ -220,7 +291,7 @@ export default function NewRafflePage() {
                   <span>🔀</span> Ambos (Híbrido)
                 </div>
                 <p className="text-[11px] text-slate-400 leading-tight">
-                  O cliente pode escolher números específicos na grade OU gerar aleatoriamente.
+                  O cliente pode escolher números na grade OU gerar cotas automáticas.
                 </p>
                 <span className="text-[10px] text-emerald-300 font-bold mt-1">★ Recomendado</span>
               </button>
@@ -238,7 +309,7 @@ export default function NewRafflePage() {
                   <span>🎲</span> Apenas Aleatório
                 </div>
                 <p className="text-[11px] text-slate-400 leading-tight">
-                  Sistema sorteia as cotas automaticamente ao pagar. Mais rápido para rifas grandes.
+                  Sistema sorteia as cotas automaticamente ao pagar.
                 </p>
               </button>
 
@@ -255,7 +326,7 @@ export default function NewRafflePage() {
                   <span>🔢</span> Apenas Escolha Manual
                 </div>
                 <p className="text-[11px] text-slate-400 leading-tight">
-                  O cliente é obrigado a selecionar os números que deseja na grade interativa.
+                  O cliente é obrigado a selecionar os números na grade.
                 </p>
               </button>
             </div>
@@ -272,7 +343,7 @@ export default function NewRafflePage() {
                 value={costPrice}
                 onChange={(e) => setCostPrice(parseFloat(e.target.value) || 0)}
                 required
-                className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl sm:rounded-2xl p-3 text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
               />
             </div>
 
@@ -285,7 +356,7 @@ export default function NewRafflePage() {
                 value={quotaPrice}
                 onChange={(e) => setQuotaPrice(parseFloat(e.target.value) || 0)}
                 required
-                className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl sm:rounded-2xl p-3 text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
               />
             </div>
           </div>
@@ -296,13 +367,13 @@ export default function NewRafflePage() {
               type="date"
               name="drawDate"
               required
-              className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-sm text-white focus:outline-none focus:border-emerald-400"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl sm:rounded-2xl p-3 text-sm text-white focus:outline-none focus:border-emerald-400"
             />
           </div>
         </div>
 
         {/* Calculadora Financeira de Lucro */}
-        <div className="bg-slate-950 border border-emerald-500/20 p-5 rounded-2xl space-y-3">
+        <div className="bg-slate-950 border border-emerald-500/20 p-4 sm:p-5 rounded-xl sm:rounded-2xl space-y-3">
           <span className="text-xs font-bold uppercase text-emerald-400 block tracking-wider">
             📊 Simulação de Rentabilidade & Taxas
           </span>
@@ -329,7 +400,7 @@ export default function NewRafflePage() {
         <button
           type="submit"
           disabled={uploading}
-          className="w-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black py-4 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20 active:scale-95 disabled:opacity-50"
+          className="w-full bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black py-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20 active:scale-95 disabled:opacity-50"
         >
           🚀 Criar e Lançar Rifa na Rifa Milionária
         </button>

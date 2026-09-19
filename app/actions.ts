@@ -30,13 +30,54 @@ export async function logoutAdminAction() {
   redirect('/admin/login');
 }
 
+export async function toggleRaffleStatusAction(formData: FormData) {
+  try {
+    const raffleId = formData.get('raffleId') as string;
+    const currentStatus = formData.get('currentStatus') as string;
+
+    const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+    const { error } = await supabase
+      .from('Raffle')
+      .update({ status: newStatus, updatedAt: new Date().toISOString() })
+      .eq('id', raffleId);
+
+    if (error) {
+      console.error('Erro ao alterar status da rifa:', error);
+      throw new Error('Erro ao alterar status da rifa.');
+    }
+
+    revalidatePath('/');
+    revalidatePath('/admin');
+  } catch (error: any) {
+    console.error('Erro em toggleRaffleStatusAction:', error);
+  }
+}
+
 export async function createRaffleAction(formData: FormData) {
   try {
     const title = (formData.get('title') as string || '').trim();
     if (!title) throw new Error('O título da rifa é obrigatório.');
 
     const description = (formData.get('description') as string || '').trim() || 'Rifa exclusiva Rifa Milionária';
-    const imageUrl = (formData.get('imageUrl') as string || '').trim() || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800';
+    const imagesRaw = (formData.get('images') as string || '').trim();
+    
+    let imagesList: string[] = [];
+    if (imagesRaw) {
+      try {
+        const parsed = JSON.parse(imagesRaw);
+        if (Array.isArray(parsed)) imagesList = parsed.filter(Boolean);
+      } catch (e) {
+        imagesList = imagesRaw.split(',').map(s => s.trim()).filter(Boolean);
+      }
+    }
+
+    const defaultImageUrl = (formData.get('imageUrl') as string || '').trim();
+    if (defaultImageUrl && !imagesList.includes(defaultImageUrl)) {
+      imagesList.unshift(defaultImageUrl);
+    }
+
+    const imageUrl = imagesList[0] || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800';
     const costPrice = parseFloat(formData.get('costPrice') as string) || 0;
     const totalQuotas = Math.max(1, parseInt(formData.get('totalQuotas') as string) || 1000);
     const quotaPrice = Math.max(0.01, parseFloat(formData.get('quotaPrice') as string) || 1.0);
@@ -67,6 +108,7 @@ export async function createRaffleAction(formData: FormData) {
         slug,
         description,
         imageUrl,
+        images: imagesList.length > 0 ? JSON.stringify(imagesList) : null,
         costPrice,
         totalQuotas,
         quotaPrice,
@@ -113,6 +155,7 @@ export async function createCheckoutOrderAction(formData: FormData) {
       .single();
 
     if (!raffle) throw new Error('Rifa não encontrada.');
+    if (raffle.status !== 'ACTIVE') throw new Error('Esta rifa está pausada ou desativada no momento.');
 
     let parsedNumbers: number[] = [];
     if (selectedNumbersRaw) {

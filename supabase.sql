@@ -14,12 +14,13 @@ CREATE TABLE IF NOT EXISTS "Raffle" (
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "imageUrl" TEXT NOT NULL,
+    "images" TEXT, -- Lista JSON de múltiplas fotos ["url1", "url2", "url3"]
     "costPrice" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
     "totalQuotas" INTEGER NOT NULL,
     "quotaPrice" DOUBLE PRECISION NOT NULL,
     "mpFeePercent" DOUBLE PRECISION NOT NULL DEFAULT 0.99,
     "drawDate" TIMESTAMP(3) NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE', -- 'ACTIVE' | 'INACTIVE'
     "selectionMode" TEXT NOT NULL DEFAULT 'BOTH', -- 'AUTOMATIC' | 'MANUAL' | 'BOTH'
     "hasInstantPrizes" BOOLEAN NOT NULL DEFAULT false,
     "instantPrizesCount" INTEGER NOT NULL DEFAULT 0,
@@ -68,6 +69,7 @@ CREATE TABLE IF NOT EXISTS "Setting" (
 
 -- Migrações seguras caso as tabelas já existam
 ALTER TABLE "Raffle" ADD COLUMN IF NOT EXISTS "selectionMode" TEXT NOT NULL DEFAULT 'BOTH';
+ALTER TABLE "Raffle" ADD COLUMN IF NOT EXISTS "images" TEXT;
 ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "selectedNumbers" TEXT;
 
 -- Criar Índices de Alta Performance
